@@ -389,6 +389,44 @@
     .modal-body table { border-collapse: collapse; width: 100%; margin-bottom: 14px; }
     .modal-body th, .modal-body td { border: 1px solid var(--border); padding: 6px 12px; }
     .modal-body th { background: var(--bg); }
+    .front-matter {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+    .front-matter-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    .front-matter-grid {
+      display: grid;
+      grid-template-columns: minmax(100px, 180px) 1fr;
+      gap: 8px 12px;
+      align-items: start;
+    }
+    .front-matter-key {
+      color: var(--muted);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      word-break: break-word;
+    }
+    .front-matter-value {
+      color: var(--text);
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .front-matter pre {
+      margin: 0;
+      max-height: 220px;
+    }
 
     /* ── Empty / loading states ──────────────────────────── */
     .state-msg {
@@ -683,7 +721,9 @@
       const rawUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${item.path}`;
       const res = await fetch(rawUrl);
       const md  = await res.text();
-      body.innerHTML = marked.parse(md);
+      const frontMatter = parseFrontMatter(md);
+      const markdownBody = frontMatter ? frontMatter.content : md;
+      body.innerHTML = `${renderFrontMatter(frontMatter)}${marked.parse(markdownBody)}`;
 
       const filename = item.path.split('/').pop();
 
@@ -737,6 +777,63 @@
       (acc[item[key]] = acc[item[key]] || []).push(item);
       return acc;
     }, {});
+  }
+
+  function parseFrontMatter(markdown) {
+    const match = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---\s*(?:\r?\n|$)/);
+    if (!match) return null;
+
+    const raw = match[1];
+    const content = markdown.slice(match[0].length);
+    const entries = raw
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#') && /^[A-Za-z0-9_.-]+\s*:/.test(line))
+      .map(line => {
+        const idx = line.indexOf(':');
+        return {
+          key: line.slice(0, idx).trim(),
+          value: line.slice(idx + 1).trim() || '(empty)',
+        };
+      });
+
+    return { raw, content, entries };
+  }
+
+  function escapeHtml(value) {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function renderFrontMatter(frontMatter) {
+    if (!frontMatter) return '';
+
+    if (frontMatter.entries.length === 0) {
+      return `
+        <section class="front-matter">
+          <div class="front-matter-title">YAML Front Matter</div>
+          <pre><code>${escapeHtml(frontMatter.raw)}</code></pre>
+        </section>
+      `;
+    }
+
+    const rows = frontMatter.entries
+      .map(({ key, value }) => `
+        <div class="front-matter-key">${escapeHtml(key)}</div>
+        <div class="front-matter-value">${escapeHtml(value)}</div>
+      `)
+      .join('');
+
+    return `
+      <section class="front-matter">
+        <div class="front-matter-title">YAML Front Matter</div>
+        <div class="front-matter-grid">${rows}</div>
+      </section>
+    `;
   }
 
   // ── Boot ─────────────────────────────────────────────────
