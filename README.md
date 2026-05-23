@@ -15,6 +15,14 @@ Example:
 - `discovery/skills/`
 - `discovery/instructions/`
 
+## Skills
+
+### spring-htmx-skill
+
+**Path:** `spring-htmx/skills/spring-htmx-skill.md`
+
+Reference skill for using the [htmx-spring-boot](https://github.com/wimdeblauwe/htmx-spring-boot) library. Covers Maven configuration, request/response headers, HTML fragments, Spring Security integration, and the Thymeleaf dialect. Not invocable — use as context when working with Spring Boot + htmx projects.
+
 ## References
 
 - https://docs.github.com/en/copilot
