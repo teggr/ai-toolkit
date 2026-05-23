@@ -194,18 +194,44 @@
       height: calc(100vh - 57px - 57px);
     }
 
+    .purpose-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
     .purpose-heading {
       font-size: 13px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
       color: var(--muted);
-      margin: 0 0 12px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
+      margin: 0;
     }
 
-    .purpose-heading:not(:first-child) { margin-top: 32px; }
+    .purpose-header:not(:first-child) { margin-top: 32px; }
+
+    .purpose-jbang-btn {
+      margin-left: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      padding: 3px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .purpose-jbang-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .purpose-jbang-btn.copied { border-color: #3fb950; color: #3fb950; }
 
     .cards-grid {
       display: grid;
@@ -497,6 +523,12 @@
       <span class="modal-title" id="modal-title"></span>
       <div class="modal-meta">
         <span class="badge" id="modal-badge"></span>
+        <button class="modal-action-btn" id="modal-jbang-btn" title="Copy JBang install command">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>
+          </svg>
+          <span>Copy JBang</span>
+        </button>
         <button class="modal-action-btn" id="modal-copy-btn" title="Copy raw markdown">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
             <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>
@@ -639,10 +671,36 @@
     cards.innerHTML = '';
 
     for (const [purpose, purposeItems] of Object.entries(byPurpose)) {
+      const header = document.createElement('div');
+      header.className = 'purpose-header';
+
       const heading = document.createElement('h2');
       heading.className = 'purpose-heading';
       heading.textContent = purpose;
-      cards.appendChild(heading);
+
+      const purposeJbangBtn = document.createElement('button');
+      purposeJbangBtn.className = 'purpose-jbang-btn';
+      purposeJbangBtn.title = jbangCommandForBundle(purpose);
+      purposeJbangBtn.setAttribute('aria-label', `Copy JBang install command for ${purpose}`);
+      purposeJbangBtn.innerHTML = `
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>
+        </svg>
+        <span>Copy JBang</span>
+      `;
+      purposeJbangBtn.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(jbangCommandForBundle(purpose));
+        purposeJbangBtn.classList.add('copied');
+        purposeJbangBtn.querySelector('span').textContent = 'Copied!';
+        setTimeout(() => {
+          purposeJbangBtn.classList.remove('copied');
+          purposeJbangBtn.querySelector('span').textContent = 'Copy JBang';
+        }, 2000);
+      });
+
+      header.appendChild(heading);
+      header.appendChild(purposeJbangBtn);
+      cards.appendChild(header);
 
       const grid = document.createElement('div');
       grid.className = 'cards-grid';
@@ -705,14 +763,25 @@
     const body      = document.getElementById('modal-body');
     const copyBtn   = document.getElementById('modal-copy-btn');
     const dlBtn     = document.getElementById('modal-download-btn');
+    const jbangBtn  = document.getElementById('modal-jbang-btn');
 
     title.textContent = item.name;
     badge.textContent = item.type;
     badge.className   = `badge badge-${item.type}`;
     link.href = `https://github.com/${OWNER}/${REPO}/blob/${BRANCH}/${item.path}`;
     body.innerHTML = `<div class="state-msg"><div class="spinner"></div></div>`;
-    copyBtn.disabled = true;
-    dlBtn.disabled   = true;
+    copyBtn.disabled  = true;
+    dlBtn.disabled    = true;
+
+    jbangBtn.onclick = async () => {
+      await navigator.clipboard.writeText(jbangCommand(item));
+      jbangBtn.classList.add('copied');
+      jbangBtn.querySelector('span').textContent = 'Copied!';
+      setTimeout(() => {
+        jbangBtn.classList.remove('copied');
+        jbangBtn.querySelector('span').textContent = 'Copy JBang';
+      }, 2000);
+    };
 
     backdrop.classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -772,6 +841,14 @@
   });
 
   // ── Helpers ──────────────────────────────────────────────
+  function jbangCommandForBundle(bundle) {
+    return `jbang https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/AiToolkit.java install ${bundle}`;
+  }
+
+  function jbangCommand(item) {
+    return jbangCommandForBundle(item.purpose);
+  }
+
   function groupBy(arr, key) {
     return arr.reduce((acc, item) => {
       (acc[item[key]] = acc[item[key]] || []).push(item);

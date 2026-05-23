@@ -299,8 +299,6 @@ class AiToolkit implements Runnable {
         description = "List available bundles in the teggr/ai-toolkit repository.")
     static class ListCommand implements Callable<Integer> {
 
-        private static final List<String> IGNORED = List.of(".github", "docs");
-
         private final HttpClient client = newHttpClient();
 
         @Override
@@ -309,7 +307,6 @@ class AiToolkit implements Runnable {
             List<String> bundles = extractPaths(tree.json(), "tree", null)
                 .stream()
                 .filter(p -> !p.contains("/"))
-                .filter(p -> !IGNORED.contains(p))
                 .sorted()
                 .toList();
 

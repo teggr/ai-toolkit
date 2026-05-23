@@ -45,11 +45,6 @@ You can run the script without cloning the repository by passing the raw GitHub 
 ```bash
 jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list
 jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery
-
-# Install with custom name
-jbang app install --name aitoolkit https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java
-aitoolkit list
-aitoolkit install discovery 
 ```
 
 For help:
