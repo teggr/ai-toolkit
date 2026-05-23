@@ -1,5 +1,7 @@
 # ai-toolkit
 
+**🔗 https://teggr.github.io/ai-toolkit/**
+
 A collection of Copilot customization resources including prompts, skills, agents, and custom instructions.
 
 ## Starter structure
