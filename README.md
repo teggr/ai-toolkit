@@ -6,18 +6,51 @@ A collection of Copilot customization resources including prompts, skills, agent
 
 ## CLI installer
 
-Use the JBang script `AiToolkit.java` to install discovery bundle resources from this repository.
+Use the JBang script `AiToolkit.java` to manage Copilot customization bundles from this repository.
 
 ```bash
-jbang AiToolkit.java [--target <dir> | --global] [--force] <repo-root-name>
+jbang AiToolkit.java <command> [options]
 ```
+
+### `list` — Show available bundles
+
+```bash
+jbang AiToolkit.java list
+```
+
+### `install <bundle>` — Install a bundle
+
+```bash
+jbang AiToolkit.java install [--target <dir> | --global] [--force] <bundle>
+```
+
+Options:
+
+- `--target <dir>` — Target install directory (default: `./.github`)
+- `--global` — Install into `~/.copilot` (overrides `--target`)
+- `--force` — Overwrite existing files without prompting
 
 Examples:
 
 ```bash
-jbang AiToolkit.java ai-toolkit
-jbang AiToolkit.java --target /tmp/copilot-resources ai-toolkit
-jbang AiToolkit.java --global --force ai-toolkit
+jbang AiToolkit.java install discovery
+jbang AiToolkit.java install --target /tmp/copilot-resources discovery
+jbang AiToolkit.java install --global --force discovery
+```
+
+### Run directly from GitHub
+
+You can run the script without cloning the repository by passing the raw GitHub URL to JBang:
+
+```bash
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery
+```
+
+For help:
+
+```bash
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java --help
 ```
 
 ## Starter structure
