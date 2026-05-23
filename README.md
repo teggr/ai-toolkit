@@ -39,6 +39,13 @@ Example:
 
 Reference skill for using the [htmx-spring-boot](https://github.com/wimdeblauwe/htmx-spring-boot) library. Covers Maven configuration, request/response headers, HTML fragments, Spring Security integration, and the Thymeleaf dialect. Not invocable — use as context when working with Spring Boot + htmx projects.
 
+
+### j2html-skill
+
+**Path:** `j2html/skills/SKILL.md`
+
+Reference skill for using [j2html](https://j2html.com/). Includes local examples documentation for common usage patterns, loops, partials, and dynamic views.
+
 ## References
 
 - https://docs.github.com/en/copilot
