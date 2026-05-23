@@ -7,4 +7,4 @@ disable-model-invocation: true
 
 This skill provides reference documentation for the [htmx-spring-boot](https://github.com/wimdeblauwe/htmx-spring-boot) library.
 
-See [htmx-spring-boot-README.md](htmx-spring-boot-README.md) for full library usage documentation.
+See [docs/docs.md](docs/docs.md) for full library usage documentation.
