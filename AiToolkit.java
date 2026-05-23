@@ -1,4 +1,4 @@
-#!/usr/bin/env jbang
+///usr/bin/env jbang "$0" "$@" ; exit $?
 //JAVA 21+
 
 import java.io.Console;
@@ -148,7 +148,7 @@ class AiToolkit {
     }
 
     private static void printUsage() {
-        System.out.println("ai-toolkit [--target <dir> | --global] [--force] <repo-root-name>");
+        System.out.println("jbang AiToolkit.java [--target <dir> | --global] [--force] <repo-root-name>");
         System.out.println();
         System.out.println("Install discovery bundle resources from https://github.com/teggr/<repo-root-name>.");
         System.out.println("  --target <dir>  Target install directory (default: ./.github)");
@@ -242,7 +242,7 @@ class AiToolkit {
         HttpRequest request = HttpRequest.newBuilder(URI.create(url))
             .timeout(timeout)
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "ai-toolkit-installer")
+            .header("User-Agent", "AiToolkit-installer")
             .GET()
             .build();
         return client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -323,7 +323,7 @@ class AiToolkit {
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))
                 .timeout(Duration.ofSeconds(30))
-                .header("User-Agent", "ai-toolkit-installer")
+                .header("User-Agent", "AiToolkit-installer")
                 .GET()
                 .build();
 

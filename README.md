@@ -6,18 +6,18 @@ A collection of Copilot customization resources including prompts, skills, agent
 
 ## CLI installer
 
-Use the JBang script `ai-toolkit` to install discovery bundle resources from this repository.
+Use the JBang script `AiToolkit.java` to install discovery bundle resources from this repository.
 
 ```bash
-./ai-toolkit [--target <dir> | --global] [--force] <repo-root-name>
+jbang AiToolkit.java [--target <dir> | --global] [--force] <repo-root-name>
 ```
 
 Examples:
 
 ```bash
-./ai-toolkit ai-toolkit
-./ai-toolkit --target /tmp/copilot-resources ai-toolkit
-./ai-toolkit --global --force ai-toolkit
+jbang AiToolkit.java ai-toolkit
+jbang AiToolkit.java --target /tmp/copilot-resources ai-toolkit
+jbang AiToolkit.java --global --force ai-toolkit
 ```
 
 ## Starter structure
