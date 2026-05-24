@@ -291,6 +291,34 @@
     .badge-skills     { background: rgba(56,139,253,0.2);  color: #a5d6ff; }
     .badge-prompts    { background: rgba(63,185,80,0.2);   color: #56d364; }
     .badge-instructions { background: rgba(210,153,34,0.2); color: #e3b341; }
+    .badge-bundle     { background: rgba(163,113,247,0.2); color: #d2a8ff; }
+
+    .card-description {
+      color: var(--muted);
+      font-size: 13px;
+      flex: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .card-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .card-jbang-btn {
+      margin-left: auto;
+      padding: 4px 8px;
+    }
 
     /* ── Modal ───────────────────────────────────────────── */
     .modal-backdrop {
@@ -505,7 +533,7 @@
         <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
           <path d="M10.68 11.74a6 6 0 1 1 1.06-1.06l3.04 3.03a.75.75 0 1 1-1.06 1.06zM1.5 6.5a4.5 4.5 0 1 0 9 0 4.5 4.5 0 0 0-9 0z"/>
         </svg>
-        <input type="search" id="search" placeholder="Search resources…" />
+        <input type="search" id="search" placeholder="Search bundles…" />
       </div>
       <div id="type-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -562,6 +590,7 @@
   const BRANCH = 'main';
 
   const TYPE_ICONS = {
+    bundle: '📦',
     agents: '🤖',
     skills: '⚡',
     prompts: '💬',
@@ -572,6 +601,7 @@
 
   // ── State ────────────────────────────────────────────────
   let allItems = [];   // { name, path, purpose, type, sha }
+  let allBundles = []; // { name, description, purpose, path, type, types, resourceCount, markdown, frontMatter }
   let activeFilter = null;
   let activeSidebarItem = null;
   let searchQuery = '';
@@ -583,8 +613,11 @@
     if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
     const data = await res.json();
 
+    const markdownFiles = data.tree
+      .filter(n => n.type === 'blob' && n.path.endsWith('.md'));
+
     // Filter to markdown files two levels deep: {purpose}/{type}/{file}.md
-    const items = data.tree
+    const items = markdownFiles
       .filter(n => n.type === 'blob' && n.path.match(/^[^/]+\/[^/]+\/.+\.md$/))
       .map(n => {
         const parts = n.path.split('/');
@@ -597,8 +630,50 @@
         };
       });
 
+    const bundleReadmes = markdownFiles
+      .filter(n => /^[^/]+\/README\.md$/i.test(n.path))
+      .map(n => {
+        const [purpose] = n.path.split('/');
+        return { purpose, path: n.path, sha: n.sha };
+      });
+
+    const bundleReadmeByPurpose = new Map(bundleReadmes.map(bundle => [bundle.purpose, bundle]));
+    const bundlePurposes = [...new Set([
+      ...items.map(item => item.purpose),
+      ...bundleReadmes.map(bundle => bundle.purpose),
+    ])].sort();
+
+    const bundles = await Promise.all(bundlePurposes.map(async purpose => {
+      const readme = bundleReadmeByPurpose.get(purpose);
+      let markdown = '';
+      let frontMatter = null;
+
+      if (readme) {
+        markdown = await fetchMarkdown(readme.path);
+        frontMatter = parseFrontMatter(markdown);
+      }
+
+      const resources = items.filter(item => item.purpose === purpose);
+      const types = [...new Set(resources.map(item => item.type))]
+        .sort((a, b) => KNOWN_TYPES.indexOf(a) - KNOWN_TYPES.indexOf(b));
+
+      return {
+        name: frontMatter?.data?.name || purpose,
+        description: frontMatter?.data?.description || `${resources.length} resource${resources.length === 1 ? '' : 's'}`,
+        purpose,
+        path: readme?.path || `${purpose}/README.md`,
+        type: 'bundle',
+        sha: readme?.sha || null,
+        types,
+        resourceCount: resources.length,
+        markdown,
+        frontMatter,
+      };
+    }));
+
     allItems = items;
-    return items;
+    allBundles = bundles;
+    return { items, bundles };
   }
 
   // ── Render sidebar ───────────────────────────────────────
@@ -615,7 +690,8 @@
 
       const heading = document.createElement('div');
       heading.className = 'sidebar-purpose';
-      heading.innerHTML = `<i class="chevron">▾</i> ${purpose}`;
+      const bundle = allBundles.find(item => item.purpose === purpose);
+      heading.innerHTML = `<i class="chevron">▾</i> ${escapeHtml(bundle?.name || purpose)}`;
       heading.addEventListener('click', () => {
         heading.classList.toggle('collapsed');
         typeGroupWrap.style.display = heading.classList.contains('collapsed') ? 'none' : '';
@@ -653,77 +729,68 @@
   // ── Render cards ─────────────────────────────────────────
   function renderCards() {
     const cards = document.getElementById('cards');
-    let items = allItems;
+    let bundles = allBundles;
 
-    if (activeFilter) items = items.filter(i => i.type === activeFilter);
-    if (searchQuery)  items = items.filter(i =>
-      i.name.toLowerCase().includes(searchQuery) ||
-      i.purpose.toLowerCase().includes(searchQuery) ||
-      i.type.toLowerCase().includes(searchQuery)
+    if (activeFilter) bundles = bundles.filter(bundle => bundle.types.includes(activeFilter));
+    if (searchQuery) bundles = bundles.filter(bundle =>
+      bundle.name.toLowerCase().includes(searchQuery) ||
+      bundle.description.toLowerCase().includes(searchQuery) ||
+      bundle.purpose.toLowerCase().includes(searchQuery) ||
+      bundle.types.some(type => type.toLowerCase().includes(searchQuery))
     );
 
-    if (items.length === 0) {
-      cards.innerHTML = `<div class="state-msg"><span class="emoji">🔍</span>No resources match your search.</div>`;
+    if (bundles.length === 0) {
+      cards.innerHTML = `<div class="state-msg"><span class="emoji">🔍</span>No bundles match your search.</div>`;
       return;
     }
 
-    const byPurpose = groupBy(items, 'purpose');
     cards.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'cards-grid';
 
-    for (const [purpose, purposeItems] of Object.entries(byPurpose)) {
-      const header = document.createElement('div');
-      header.className = 'purpose-header';
+    for (const bundle of bundles) {
+      const resourceBadges = bundle.types
+        .map(type => `<span class="badge badge-${type}">${escapeHtml(type)}</span>`)
+        .join('');
 
-      const heading = document.createElement('h2');
-      heading.className = 'purpose-heading';
-      heading.textContent = purpose;
-
-      const purposeJbangBtn = document.createElement('button');
-      purposeJbangBtn.className = 'purpose-jbang-btn';
-      purposeJbangBtn.title = jbangCommandForBundle(purpose);
-      purposeJbangBtn.setAttribute('aria-label', `Copy JBang install command for ${purpose}`);
-      purposeJbangBtn.innerHTML = `
-        <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>
-        </svg>
-        <span>Copy JBang</span>
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="card-icon">${TYPE_ICONS.bundle}</span>
+          <span class="card-name">${escapeHtml(bundle.name)}</span>
+        </div>
+        <div class="card-description">${escapeHtml(bundle.description)}</div>
+        <div class="card-path">${escapeHtml(bundle.path)}</div>
+        <div class="card-footer">
+          <div class="card-badges">
+            <span class="badge badge-bundle">${bundle.resourceCount} resource${bundle.resourceCount === 1 ? '' : 's'}</span>
+            ${resourceBadges}
+          </div>
+          <button class="purpose-jbang-btn card-jbang-btn" type="button" title="${escapeHtml(jbangCommandForBundle(bundle.purpose))}">
+            <span>Copy JBang</span>
+          </button>
+        </div>
       `;
-      purposeJbangBtn.addEventListener('click', async () => {
-        await navigator.clipboard.writeText(jbangCommandForBundle(purpose));
-        purposeJbangBtn.classList.add('copied');
-        purposeJbangBtn.querySelector('span').textContent = 'Copied!';
+
+      card.addEventListener('click', () => openItem(bundle));
+
+      const jbangBtn = card.querySelector('.card-jbang-btn');
+      jbangBtn.addEventListener('click', async event => {
+        event.stopPropagation();
+        await navigator.clipboard.writeText(jbangCommandForBundle(bundle.purpose));
+        jbangBtn.classList.add('copied');
+        jbangBtn.querySelector('span').textContent = 'Copied!';
         setTimeout(() => {
-          purposeJbangBtn.classList.remove('copied');
-          purposeJbangBtn.querySelector('span').textContent = 'Copy JBang';
+          jbangBtn.classList.remove('copied');
+          jbangBtn.querySelector('span').textContent = 'Copy JBang';
         }, 2000);
       });
 
-      header.appendChild(heading);
-      header.appendChild(purposeJbangBtn);
-      cards.appendChild(header);
-
-      const grid = document.createElement('div');
-      grid.className = 'cards-grid';
-
-      for (const item of purposeItems) {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-          <div class="card-header">
-            <span class="card-icon">${TYPE_ICONS[item.type] || '📄'}</span>
-            <span class="card-name">${item.name}</span>
-          </div>
-          <div class="card-path">${item.path}</div>
-          <div class="card-footer">
-            <span class="badge badge-${item.type}">${item.type}</span>
-          </div>
-        `;
-        card.addEventListener('click', () => openItem(item));
-        grid.appendChild(card);
-      }
-
-      cards.appendChild(grid);
+      grid.appendChild(card);
     }
+
+    cards.appendChild(grid);
   }
 
   // ── Render type filter pills ─────────────────────────────
@@ -787,10 +854,8 @@
     document.body.style.overflow = 'hidden';
 
     try {
-      const rawUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${item.path}`;
-      const res = await fetch(rawUrl);
-      const md  = await res.text();
-      const frontMatter = parseFrontMatter(md);
+      const md = item.markdown || await fetchMarkdown(item.path);
+      const frontMatter = item.frontMatter || parseFrontMatter(md);
       const markdownBody = frontMatter ? frontMatter.content : md;
       body.innerHTML = `${renderFrontMatter(frontMatter)}${marked.parse(markdownBody)}`;
 
@@ -849,6 +914,13 @@
     return jbangCommandForBundle(item.purpose);
   }
 
+  async function fetchMarkdown(path) {
+    const rawUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}`;
+    const res = await fetch(rawUrl);
+    if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+    return res.text();
+  }
+
   function groupBy(arr, key) {
     return arr.reduce((acc, item) => {
       (acc[item[key]] = acc[item[key]] || []).push(item);
@@ -874,7 +946,12 @@
         };
       });
 
-    return { raw, content, entries };
+    return {
+      raw,
+      content,
+      entries,
+      data: Object.fromEntries(entries.map(({ key, value }) => [key, value])),
+    };
   }
 
   function escapeHtml(value) {
@@ -916,11 +993,11 @@
   // ── Boot ─────────────────────────────────────────────────
   (async () => {
     try {
-      const items = await loadTree();
+      const { items, bundles } = await loadTree();
       const count = items.length;
 
       document.getElementById('subtitle').textContent =
-        `${count} resource${count !== 1 ? 's' : ''} · teggr/ai-toolkit`;
+        `${bundles.length} bundle${bundles.length !== 1 ? 's' : ''} · ${count} resource${count !== 1 ? 's' : ''} · teggr/ai-toolkit`;
 
       buildSidebar(items);
       buildFilters(items);
