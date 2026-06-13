@@ -9,6 +9,7 @@ This skill provides a practical guide for setting up and using [deploy4j](https:
 Primary usage pattern:
 1. Use local CLI help first (for the installed version), for example `deploy4j --help` and `deploy4j <command> --help`.
 2. Use [docs/docs.md](docs/docs.md) in this skill for standard installation/config/deploy workflows.
-3. Use the deploy4j website docs as fallback when local help is missing detail or when deeper conceptual guidance is needed.
+3. Route by topic in [docs/docs.md](docs/docs.md): installation, configuration, routing/Traefik behavior, command families, and hooks.
+4. Use the deploy4j website docs as fallback when local help is missing detail or when deeper conceptual guidance is needed.
 
 See [docs/docs.md](docs/docs.md) for the full workflow guide.
