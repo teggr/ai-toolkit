@@ -84,6 +84,15 @@ An invocable VS Code skill for reviewing agent-generated pull requests. Guides t
 
 Copilot code review custom instructions that automate the mechanical checks on every pull request. Drop into `.github/copilot-instructions.md` or add via GitHub Repository Settings → Copilot → Code review → Custom instructions.
 
+
+## Deploy4j
+
+### deploy4j skill
+
+**Path:** `deploy4j/skills/deploy4j/SKILL.md`
+
+Reference skill for [deploy4j](https://deploy4j.dev/) installation and operations. Covers CLI-first discovery of command usage, project initialization, config/secrets setup, first-time `setup`, and repeatable `deploy` workflows, with fallback to website docs when needed.
+
 ## References
 
 - https://docs.github.com/en/copilot
