@@ -93,6 +93,14 @@ Copilot code review custom instructions that automate the mechanical checks on e
 
 Reference skill for [deploy4j](https://deploy4j.dev/) installation and operations. Covers CLI-first discovery of command usage, project initialization, config/secrets setup, first-time `setup`, and repeatable `deploy` workflows, with fallback to website docs when needed.
 
+## AI Toolkit
+
+### ai-toolkit skill
+
+**Path:** `ai-toolkit/skills/ai-toolkit/SKILL.md`
+
+An invocable skill for managing this toolkit's bundles end-to-end: discover available bundles, detect installed bundles in local (`.github`) or global (`~/.copilot`) roots, install/update bundles, and reconcile local files with remote bundle content.
+
 ## References
 
 - https://docs.github.com/en/copilot
