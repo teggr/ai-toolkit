@@ -57,6 +57,22 @@
       color: var(--muted);
       font-size: 13px;
       margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      text-align: right;
+    }
+
+    .header-subtitle a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .header-subtitle a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
     }
 
     /* ── Layout ──────────────────────────────────────────── */
@@ -508,6 +524,16 @@
     @media (max-width: 700px) {
       .layout { grid-template-columns: 1fr; }
       aside { display: none; }
+      header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .header-subtitle {
+        margin-left: 0;
+        width: 100%;
+        justify-content: flex-start;
+        text-align: left;
+      }
     }
   </style>
 </head>
@@ -519,7 +545,7 @@
     <path d="M7 8h10M7 12h10M7 16h6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
   </svg>
   <a class="header-title" href="#">ai-toolkit</a>
-  <span class="header-subtitle" id="subtitle">Loading…</span>
+  <div class="header-subtitle" id="subtitle">Loading…</div>
 </header>
 
 <div class="layout">
@@ -996,8 +1022,8 @@
       const { items, bundles } = await loadTree();
       const count = items.length;
 
-      document.getElementById('subtitle').textContent =
-        `${bundles.length} bundle${bundles.length !== 1 ? 's' : ''} · ${count} resource${count !== 1 ? 's' : ''} · teggr/ai-toolkit`;
+      document.getElementById('subtitle').innerHTML =
+        `${bundles.length} bundle${bundles.length !== 1 ? 's' : ''} · ${count} resource${count !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
 
       buildSidebar(items);
       buildFilters(items);

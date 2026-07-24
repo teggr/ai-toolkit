@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ai-toolkit install help</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-hover: #79c0ff;
+      --radius: 8px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 10;
+      flex-wrap: wrap;
+    }
+
+    header svg { flex-shrink: 0; }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .header-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      text-align: right;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+
+    .hero {
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 32px;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .card p,
+    .card li,
+    .note,
+    .steps p {
+      color: var(--muted);
+    }
+
+    .card ul,
+    .steps ol {
+      padding-left: 20px;
+      margin-top: 12px;
+    }
+
+    .card li,
+    .steps li {
+      margin-bottom: 8px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .step h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    .step h3 {
+      font-size: 15px;
+      margin: 18px 0 10px;
+    }
+
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      overflow-x: auto;
+      margin: 12px 0 0;
+    }
+
+    code {
+      background: rgba(110,118,129,0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+
+    .button-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 13px;
+    }
+
+    .button-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .note {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-left: 3px solid var(--accent);
+      background: rgba(88,166,255,0.08);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    @media (max-width: 700px) {
+      .header-subtitle {
+        margin-left: 0;
+        width: 100%;
+        justify-content: flex-start;
+        text-align: left;
+      }
+
+      main {
+        padding-top: 24px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="24" rx="6" fill="#238636"/>
+    <path d="M7 8h10M7 12h10M7 16h6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+  <a class="header-title" href="./">ai-toolkit</a>
+  <div class="header-subtitle">
+    <a href="./">Back to bundles</a>
+    <span>·</span>
+    <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="eyebrow">Install Help</div>
+    <h1>Install ai-toolkit bundles</h1>
+    <p>Use the JBang-based installer in this repository to list available bundles and copy them into your local <code>.github</code> folder or your global <code>~/.copilot</code> folder.</p>
+  </section>
+
+  <section class="grid" aria-label="Install overview">
+    <article class="card">
+      <h2>Before you start</h2>
+      <p>You need Java and JBang available on your machine. If JBang is not installed yet, use the official setup guide first.</p>
+      <div class="actions">
+        <a class="button-link" href="https://www.jbang.dev/download/" target="_blank" rel="noopener">Install JBang</a>
+        <a class="button-link" href="https://www.jbang.dev/documentation/guide/latest/installation.html" target="_blank" rel="noopener">JBang docs</a>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Two ways to use it</h2>
+      <ul>
+        <li>Download or clone this repository, then run <code>AiToolkit.java</code> locally.</li>
+        <li>Skip the download and run the same installer directly from the raw GitHub URL.</li>
+      </ul>
+    </article>
+  </section>
+
+  <section class="steps" aria-label="Install steps">
+    <article class="step">
+      <h2>Option 1: Download or clone the repository</h2>
+      <p>If you already have this repository locally, run the installer from the repo root.</p>
+
+      <h3>List available bundles</h3>
+      <pre><code>jbang AiToolkit.java list</code></pre>
+
+      <h3>Install a bundle into the current repository</h3>
+      <pre><code>jbang AiToolkit.java install discovery</code></pre>
+
+      <h3>Useful install variants</h3>
+      <pre><code>jbang AiToolkit.java install --target /tmp/copilot-resources discovery
+jbang AiToolkit.java install --global --force discovery</code></pre>
+
+      <div class="note">By default the installer writes into <code>./.github</code>. Use <code>--global</code> to install into your user-level <code>~/.copilot</code> folder instead.</div>
+    </article>
+
+    <article class="step">
+      <h2>Option 2: Run directly from GitHub with JBang</h2>
+      <p>This path is useful when you want the installer without cloning the repository first.</p>
+
+      <h3>List available bundles</h3>
+      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list</code></pre>
+
+      <h3>Install a bundle</h3>
+      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery</code></pre>
+
+      <h3>Show CLI help</h3>
+      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java --help</code></pre>
+    </article>
+  </section>
+
+  <section class="card">
+    <h2>What happens when you install</h2>
+    <ul>
+      <li>The installer fetches bundle files from <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>.</li>
+      <li>Existing files are left alone unless you use <code>--force</code> or choose overwrite in the prompt.</li>
+      <li>Use <code>jbang ... install &lt;bundle&gt;</code> with any bundle name shown by <code>list</code>.</li>
+    </ul>
+    <div class="actions">
+      <a class="button-link" href="./">Browse bundles</a>
+      <a class="button-link" href="https://github.com/teggr/ai-toolkit/blob/main/README.md" target="_blank" rel="noopener">Read full README</a>
+    </div>
+  </section>
+</main>
+</body>
+</html>
