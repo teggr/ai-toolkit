@@ -62,6 +62,8 @@ Inside each feature slice, allow local layering only as needed (api, application
 
 Balanced policy: allow top-level platform/integration modules when required, but keep them thin so features remain the primary top-level signal.
 
+See the **Example Layouts** section below for concrete before/after package trees.
+
 ### 4) Validate dependency rules
 
 Check these invariants:
@@ -183,6 +185,166 @@ Calculation notes:
 
 - Weighted Points per criterion = (Score / 5) * Weight
 - Example: score 4 with weight 30 gives 24 points.
+
+## Example Layouts
+
+Use these concrete examples when producing or reviewing package trees.
+
+### Example 1: Drotbohm CRM — before and after (Java)
+
+Source: https://odrotbohm.de/2013/01/whoops-where-did-my-architecture-go/
+
+**Before — slice-then-layer naming (layer packages force internal types public)**
+
+```
+com.example.crm.account.domain
+com.example.crm.account.presentation
+com.example.crm.account.repository
+com.example.crm.account.service
+com.example.crm.core.domain
+com.example.crm.customer.domain
+com.example.crm.customer.presentation
+com.example.crm.customer.service
+com.example.crm.customer.repository
+```
+
+Problem: `CustomerRepository` must be `public` so the service layer can reference it, making it an accidental injection candidate everywhere in the codebase.
+
+**After — flat slice packages with visibility control**
+
+Legend: `+` = public, `o` = package-private.
+
+```
+com.example.crm.customer
+  + Customer
+  + CustomerManagement
+  o CustomerManagementImpl
+  o CustomerNumberGenerator
+  o CustomerRepository
+com.example.crm.account
+  + Account
+  + AccountManagement
+  o AccountManagementImpl
+  o AccountRepository
+com.example.crm.core
+  + Money
+  + Address
+```
+
+Result: fewer than half the types need to be public. `CustomerRepository` is hidden from the rest of the codebase by the Java compiler without any additional tooling.
+
+---
+
+### Example 2: Maven Spring Boot web app — before and after
+
+**Before — technical-layer-first (antipattern)**
+
+```
+src/
+└── main/
+    ├── java/com/example/webapp/
+    │   ├── controller/
+    │   │   ├── CustomerController.java
+    │   │   ├── OrderController.java
+    │   │   └── ProductController.java
+    │   ├── service/
+    │   │   ├── CustomerService.java
+    │   │   ├── CustomerServiceImpl.java
+    │   │   └── OrderService.java
+    │   ├── repository/
+    │   │   ├── CustomerRepository.java
+    │   │   ├── OrderRepository.java
+    │   │   └── ProductRepository.java
+    │   ├── model/
+    │   │   ├── Customer.java
+    │   │   ├── Order.java
+    │   │   └── Product.java
+    │   └── dto/
+    │       ├── CustomerDto.java
+    │       └── OrderDto.java
+    └── resources/
+        ├── templates/
+        │   ├── customer.html
+        │   └── order.html
+        └── application.properties
+```
+
+**After — feature-first with package-private internals**
+
+Legend: `+` = public, `-` = package-private.
+
+```
+src/
+└── main/
+    ├── java/com/example/webapp/
+    │   ├── customer/
+    │   │   + Customer.java            (domain object — public)
+    │   │   + CustomerManagement.java  (slice API interface — public)
+    │   │   - CustomerController.java  (package-private)
+    │   │   - CustomerService.java     (package-private)
+    │   │   - CustomerRepository.java  (package-private)
+    │   ├── orders/
+    │   │   + Order.java               (domain object — public)
+    │   │   + OrderManagement.java     (slice API interface — public)
+    │   │   - OrderController.java     (package-private)
+    │   │   - OrderService.java        (package-private)
+    │   │   - OrderRepository.java     (package-private)
+    │   ├── catalog/
+    │   │   + Product.java             (domain object — public)
+    │   │   + CatalogBrowser.java      (slice API interface — public)
+    │   │   - ProductRepository.java   (package-private)
+    │   ├── shared/                    (utility-only — no business logic)
+    │   │   + Money.java
+    │   │   + PageResult.java
+    │   └── platform/                  (thin Spring wiring — no business logic)
+    │       - WebMvcConfig.java
+    │       - SecurityConfig.java
+    │       - PersistenceConfig.java
+    └── resources/
+        ├── templates/                 (mirrors feature split)
+        │   ├── customer/
+        │   │   ├── list.html
+        │   │   └── detail.html
+        │   ├── orders/
+        │   │   ├── list.html
+        │   │   └── checkout.html
+        │   └── catalog/
+        │       └── product-list.html
+        └── application.properties
+```
+
+Key decisions:
+- Each feature slice exposes only its domain object and a slim interface; all controllers, services, and repositories are package-private.
+- `shared/` is strictly utility (value types, pagination helpers). Move anything with business rules back into its owning feature.
+- `platform/` holds only Spring configuration and thin adapters. It has no business logic.
+- Template directories mirror the Java package split so a developer always knows where to look.
+
+---
+
+### Example 3: Growing a slice — internal sub-packaging
+
+When a single feature slice becomes large (20+ classes), introduce internal sub-packages. Keep the public API surface at the slice root and hide sub-packages from outside callers.
+
+```
+com.example.webapp.orders/
+  + Order.java                    (public domain object)
+  + OrderManagement.java          (public slice API)
+  application/
+    - PlaceOrderUseCase.java      (package-private)
+    - CancelOrderUseCase.java     (package-private)
+  domain/
+    - OrderLine.java              (package-private)
+    - OrderStatus.java            (package-private)
+    - PricingPolicy.java          (package-private)
+  infrastructure/
+    - JpaOrderRepository.java     (package-private)
+    - OrderEmailNotifier.java     (package-private)
+```
+
+Rules for this pattern:
+- Sub-packages (`application/`, `domain/`, `infrastructure/`) are an internal implementation detail of the slice only.
+- Other slices still import only from `com.example.webapp.orders` (the root), never from sub-packages.
+- Introduce sub-packages only when the flat slice becomes hard to navigate, not by default.
 
 ## Common Anti-patterns
 
