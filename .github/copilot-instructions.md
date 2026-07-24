@@ -1,11 +1,14 @@
 # Copilot instructions for this repository
 
-This repository is a curated toolkit of Copilot customization resources (prompts, skills, agents, and custom instructions).
+This repository is a curated toolkit of Copilot customization resources (skills, agents, and custom instructions).
+
+Prompt files (`*.prompt.md`) are legacy and should not be added for new work. Use skills for slash-command-style behavior and keep resources compatible across harnesses.
 
 ## Repository structure rules
 - Organize content by **purpose first**, then by **resource type**.
 - Use this path pattern: `/<purpose>/<type>/...`
-- Resource types should generally be one of: `agents`, `prompts`, `skills`, `instructions`.
+- Resource types should generally be one of: `agents`, `skills`, `instructions`.
+- Do not introduce new `prompts/` directories or `*.prompt.md` files. If prompt content exists, migrate it into `skills/`.
 - Every top-level bundle folder must include a populated `README.md`.
 
 ## Content rules

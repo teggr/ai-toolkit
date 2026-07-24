@@ -2,7 +2,9 @@
 
 **🔗 https://teggr.github.io/ai-toolkit/**
 
-A collection of Copilot customization resources including prompts, skills, agents, and custom instructions.
+A collection of Copilot customization resources focused on skills, agents, and custom instructions.
+
+> Prompt files (`*.prompt.md`) are considered legacy in this repository. For cross-harness compatibility, create and maintain **skills** instead of prompts.
 
 ## CLI installer
 
@@ -60,7 +62,6 @@ Resources are organized by **purpose** and then by **type**.
 Example:
 
 - `discovery/agents/discovery.md`
-- `discovery/prompts/`
 - `discovery/skills/`
 - `discovery/instructions/`
 
@@ -100,6 +101,18 @@ Reference skill for [deploy4j](https://deploy4j.dev/) installation and operation
 **Path:** `ai-toolkit/skills/ai-toolkit/SKILL.md`
 
 An invocable skill for managing this toolkit's bundles end-to-end: discover available bundles, detect installed bundles in local (`.github`) or global (`~/.copilot`) roots, install/update bundles, and reconcile local files with remote bundle content.
+
+## Architecture
+
+### screaming-architecture skill
+
+**Path:** `screaming-architecture/skills/screaming-architecture/SKILL.md`
+
+An invocable skill for designing, creating, and reviewing architecture with package-by-feature principles inspired by Screaming Architecture. It helps ensure package/module names communicate business capabilities first, with technical details nested beneath feature slices.
+
+**Path:** `screaming-architecture/instructions/screaming-architecture.md`
+
+Copilot agent instructions that reference the `screaming-architecture` skill and enforce feature-first architecture review outputs, including the weighted scorecard.
 
 ## References
 
