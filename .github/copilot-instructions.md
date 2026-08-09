@@ -22,6 +22,15 @@ Prompt files (`*.prompt.md`) are legacy and should not be added for new work. Us
 - When changing install or setup instructions, keep the guidance synchronized in both the threadme install documentation and the website install docs in [docs/install.html](../docs/install.html), so users see the same steps everywhere.
 - New or updated Agent Plugins must follow the canonical Agent Plugins layout from the VS Code documentation: https://code.visualstudio.com/docs/agent-customization/agent-plugins
 - Required layout baseline: a root `plugin.json` manifest with the Agent Plugins schema, skills under `skills/`, and any additional portable components in the locations the canonical spec expects. Do not introduce non-standard plugin layouts for new Agent Plugins.
+- Agent plugin instruction files are split into two types:
+	- `instructions.md` at plugin root contains general guidance that should be merged into the install root instruction file.
+	- Any `*.instructions.md` file contains specific rules and should be installed as a standalone file under the target `instructions/` folder.
+- During install, merge `instructions.md` into the root instruction file using a plugin-tagged section format:
+	- `<plugin_name_instructions>...content...</plugin_name_instructions>` where `plugin_name` is the actual plugin id (for example, `discovery_instructions`).
+	- This section is replaceable on re-install and removable on uninstall.
+- Merge target selection rule:
+	- Install root `.ai` merges into `instructions.md`.
+	- All other install roots (including `.github`, `~/.copilot`, and custom targets) merge into `copilot-instructions.md`.
 
 ## Installing Agent Plugins (for AI agents)
 

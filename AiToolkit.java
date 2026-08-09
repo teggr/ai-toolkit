@@ -39,6 +39,9 @@ class AiToolkit implements Runnable {
     static final String OWNER = "teggr";
     static final String REPO = "ai-toolkit";
     static final int MAX_RETRIES = 3;
+    static final String ROOT_INSTRUCTIONS_FILE = "instructions.md";
+    static final String ROOT_COPILOT_INSTRUCTIONS_FILE = "copilot-instructions.md";
+    static final String SPECIFIC_INSTRUCTIONS_SUFFIX = ".instructions.md";
 
     public static void main(String[] args) {
         System.exit(new CommandLine(new AiToolkit()).execute(args));
@@ -152,6 +155,113 @@ class AiToolkit implements Runnable {
         return response.body();
     }
 
+    static boolean isRootInstructionsFile(String relativePath) {
+        return ROOT_INSTRUCTIONS_FILE.equals(relativePath);
+    }
+
+    static boolean isSpecificInstructionsFile(String relativePath) {
+        Path fileNamePath = Paths.get(relativePath).getFileName();
+        if (fileNamePath == null) return false;
+        return fileNamePath.toString().endsWith(SPECIFIC_INSTRUCTIONS_SUFFIX);
+    }
+
+    static Path mapDestination(Path installRoot, String relativePath) {
+        if (!isSpecificInstructionsFile(relativePath)) {
+            return installRoot.resolve(relativePath).normalize();
+        }
+
+        Path fileNamePath = Paths.get(relativePath).getFileName();
+        if (fileNamePath == null) {
+            return installRoot.resolve(relativePath).normalize();
+        }
+
+        return installRoot.resolve("instructions").resolve(fileNamePath.toString()).normalize();
+    }
+
+    static Path rootInstructionsTarget(Path installRoot) {
+        Path leaf = installRoot.getFileName();
+        String leafName = leaf == null ? "" : leaf.toString().toLowerCase(Locale.ROOT);
+        if (".ai".equals(leafName)) {
+            return installRoot.resolve(ROOT_INSTRUCTIONS_FILE).normalize();
+        }
+        return installRoot.resolve(ROOT_COPILOT_INSTRUCTIONS_FILE).normalize();
+    }
+
+    static String pluginInstructionSectionTag(String plugin) {
+        return plugin + "_instructions";
+    }
+
+    static String pluginInstructionSection(String plugin, String instructionContent) {
+        String normalized = instructionContent == null ? "" : instructionContent.strip();
+        String sectionTag = pluginInstructionSectionTag(plugin);
+        return "<" + sectionTag + ">" + System.lineSeparator()
+            + normalized + System.lineSeparator()
+            + "</" + sectionTag + ">";
+    }
+
+    static void upsertPluginInstructionSection(Path targetFile, String plugin, String instructionContent) throws IOException {
+        Files.createDirectories(targetFile.getParent());
+
+        String existing = Files.exists(targetFile)
+            ? Files.readString(targetFile, StandardCharsets.UTF_8)
+            : "";
+        String section = pluginInstructionSection(plugin, instructionContent);
+        String updated = replaceOrAppendPluginSection(existing, plugin, section);
+
+        if (!existing.equals(updated)) {
+            Files.writeString(targetFile, updated, StandardCharsets.UTF_8);
+        }
+    }
+
+    static boolean removePluginInstructionSection(Path targetFile, String plugin) throws IOException {
+        if (!Files.exists(targetFile)) return false;
+
+        String existing = Files.readString(targetFile, StandardCharsets.UTF_8);
+        String sectionTag = pluginInstructionSectionTag(plugin);
+        Pattern sectionPattern = Pattern.compile("(?s)\\n?<" + Pattern.quote(sectionTag) + ">\\R?.*?\\R?</" + Pattern.quote(sectionTag) + ">\\n?");
+        Matcher matcher = sectionPattern.matcher(existing);
+        if (!matcher.find()) return false;
+
+        String updated = matcher.replaceAll("");
+        updated = trimExcessLeadingAndTrailingBlankLines(updated);
+        Files.writeString(targetFile, updated, StandardCharsets.UTF_8);
+        return true;
+    }
+
+    static String replaceOrAppendPluginSection(String existingContent, String plugin, String section) {
+        String sectionTag = pluginInstructionSectionTag(plugin);
+        Pattern sectionPattern = Pattern.compile("(?s)<" + Pattern.quote(sectionTag) + ">\\R?.*?\\R?</" + Pattern.quote(sectionTag) + ">");
+        Matcher matcher = sectionPattern.matcher(existingContent);
+        if (matcher.find()) {
+            String replaced = matcher.replaceFirst(Matcher.quoteReplacement(section));
+            return ensureSingleTrailingNewline(replaced);
+        }
+
+        StringBuilder out = new StringBuilder(existingContent == null ? "" : existingContent);
+        if (out.length() > 0 && !out.toString().endsWith("\n")) {
+            out.append(System.lineSeparator());
+        }
+        if (out.length() > 0 && !out.toString().endsWith(System.lineSeparator() + System.lineSeparator())) {
+            out.append(System.lineSeparator());
+        }
+        out.append(section).append(System.lineSeparator());
+        return out.toString();
+    }
+
+    static String trimExcessLeadingAndTrailingBlankLines(String text) {
+        String normalized = text.replace("\r\n", "\n").replace('\r', '\n');
+        normalized = normalized.replaceFirst("^\\n+", "");
+        normalized = normalized.replaceFirst("\\n+$", "");
+        if (normalized.isEmpty()) return "";
+        return normalized + System.lineSeparator();
+    }
+
+    static String ensureSingleTrailingNewline(String text) {
+        String normalized = text.replace("\r\n", "\n").replace('\r', '\n');
+        normalized = normalized.replaceFirst("\\n+$", "");
+        return normalized + System.lineSeparator();
+    }
+
     static String extractJsonStringField(String json, String fieldName) {
         Pattern p = Pattern.compile("\\\"" + Pattern.quote(fieldName) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"\\\\])*)\\\"");
         Matcher m = p.matcher(json);
@@ -257,12 +367,29 @@ class AiToolkit implements Runnable {
                 plugin, OWNER, REPO, tree.branch(), installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
 
-            int installed = 0, skipped = 0, failed = 0;
+            int installed = 0, skipped = 0, failed = 0, merged = 0;
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
                 String relativePath = remotePath.substring(bundlePrefix.length());
-                Path destination = installRoot.resolve(relativePath).normalize();
+
+                if (isRootInstructionsFile(relativePath)) {
+                    Path rootInstructions = rootInstructionsTarget(installRoot);
+                    System.out.printf("[%d/%d] %s -> merge into %s%n", i + 1, files.size(), remotePath, rootInstructions);
+
+                    try {
+                        String instructionContent = fetchText(client, rawUrl(tree.branch(), remotePath));
+                        upsertPluginInstructionSection(rootInstructions, plugin, instructionContent);
+                        merged++;
+                        System.out.println("  merged");
+                    } catch (Exception ex) {
+                        failed++;
+                        System.err.printf("  failed: %s%n", ex.getMessage());
+                    }
+                    continue;
+                }
+
+                Path destination = mapDestination(installRoot, relativePath);
 
                 System.out.printf("[%d/%d] %s -> %s%n", i + 1, files.size(), remotePath, destination);
 
@@ -283,7 +410,7 @@ class AiToolkit implements Runnable {
                 }
             }
 
-            System.out.printf("%nSummary: installed=%d skipped=%d failed=%d%n", installed, skipped, failed);
+            System.out.printf("%nSummary: installed=%d merged=%d skipped=%d failed=%d%n", installed, merged, skipped, failed);
             return failed == 0 ? 0 : 1;
         }
 
@@ -410,12 +537,30 @@ class AiToolkit implements Runnable {
             System.out.printf("Uninstalling agent plugin '%s' from %s%n", plugin, installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
 
-            int removed = 0, skipped = 0, missing = 0, directoriesRemoved = 0;
+            int removed = 0, skipped = 0, missing = 0, directoriesRemoved = 0, sectionsRemoved = 0;
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
                 String relativePath = remotePath.substring(bundlePrefix.length());
-                Path target = installRoot.resolve(relativePath).normalize();
+
+                if (isRootInstructionsFile(relativePath)) {
+                    Path rootInstructions = rootInstructionsTarget(installRoot);
+                    System.out.printf("[%d/%d] remove merged section from %s%n", i + 1, files.size(), rootInstructions);
+                    try {
+                        if (removePluginInstructionSection(rootInstructions, plugin)) {
+                            sectionsRemoved++;
+                            System.out.println("  section removed");
+                        } else {
+                            missing++;
+                            System.out.println("  section not found, skipping");
+                        }
+                    } catch (IOException ex) {
+                        System.err.printf("  failed: %s%n", ex.getMessage());
+                    }
+                    continue;
+                }
+
+                Path target = mapDestination(installRoot, relativePath);
 
                 System.out.printf("[%d/%d] %s%n", i + 1, files.size(), target);
 
@@ -452,8 +597,8 @@ class AiToolkit implements Runnable {
                 }
             }
 
-            System.out.printf("%nSummary: removed=%d skipped=%d not-found=%d directories-removed=%d%n",
-                removed, skipped, missing, directoriesRemoved);
+            System.out.printf("%nSummary: removed=%d sections-removed=%d skipped=%d not-found=%d directories-removed=%d%n",
+                removed, sectionsRemoved, skipped, missing, directoriesRemoved);
             return 0;
         }
 
