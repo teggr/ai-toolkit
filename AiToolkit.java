@@ -160,6 +160,46 @@ class AiToolkit implements Runnable {
         return unescapeJsonString(m.group(1));
     }
 
+    static List<String> wrapText(String text, int width) {
+        List<String> lines = new ArrayList<>();
+        String normalized = text == null ? "" : text.trim().replaceAll("\\s+", " ");
+        if (normalized.isEmpty()) {
+            lines.add("");
+            return lines;
+        }
+
+        String[] words = normalized.split(" ");
+        StringBuilder current = new StringBuilder();
+        for (String word : words) {
+            if (current.length() == 0) {
+                current.append(word);
+                continue;
+            }
+
+            if (current.length() + 1 + word.length() <= width) {
+                current.append(' ').append(word);
+            } else {
+                lines.add(current.toString());
+                current.setLength(0);
+                current.append(word);
+            }
+        }
+
+        if (current.length() > 0) {
+            lines.add(current.toString());
+        }
+        return lines;
+    }
+
+    static void printListEntry(String name, String description, int nameColumnWidth, int descriptionWidth) {
+        List<String> wrapped = wrapText(description, descriptionWidth);
+        String nameColumn = String.format("  %-" + nameColumnWidth + "s", name);
+        System.out.printf("%s  %s%n", nameColumn, wrapped.getFirst());
+        for (int i = 1; i < wrapped.size(); i++) {
+            System.out.printf("  %" + nameColumnWidth + "s  %s%n", "", wrapped.get(i));
+        }
+    }
+
     enum FileAction { OVERWRITE, SKIP }
     enum Decision { PROMPT, ALL_OVERWRITE, ALL_SKIP }
     record BranchTree(String branch, String json) {}
@@ -444,6 +484,16 @@ class AiToolkit implements Runnable {
                 return 1;
             }
 
+            List<String> bundleNames = manifests.stream()
+                .map(manifestPath -> manifestPath.substring(0, manifestPath.indexOf('/')))
+                .toList();
+            int longestName = bundleNames.stream().mapToInt(String::length).max().orElse(0);
+            int nameColumnWidth = Math.max(12, longestName);
+            int descriptionWidth = 96 - (2 + nameColumnWidth + 2);
+            if (descriptionWidth < 40) {
+                descriptionWidth = 40;
+            }
+
             System.out.printf("Available bundles in %s/%s (%s):%n", OWNER, REPO, tree.branch());
             for (String manifestPath : manifests) {
                 String bundle = manifestPath.substring(0, manifestPath.indexOf('/'));
@@ -457,7 +507,7 @@ class AiToolkit implements Runnable {
                 } catch (Exception ignored) {
                     // Keep listing bundles even if one manifest cannot be read.
                 }
-                System.out.printf("  %s - %s%n", bundle, description);
+                printListEntry(bundle, description, nameColumnWidth, descriptionWidth);
             }
             return 0;
         }
