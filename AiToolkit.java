@@ -247,6 +247,7 @@ class AiToolkit implements Runnable {
                 .stream()
                 .filter(path -> !path.equals(bundlePrefix + "plugin.json"))
                 .filter(path -> !path.equals(bundlePrefix + "README.md"))
+                .sorted()
                 .toList();
 
             if (files.isEmpty()) {
@@ -254,7 +255,6 @@ class AiToolkit implements Runnable {
                 return 1;
             }
 
-            files.sort(Comparator.naturalOrder());
             System.out.printf("Installing bundle '%s' from %s/%s (%s) into %s%n",
                 bundle, OWNER, REPO, tree.branch(), installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
