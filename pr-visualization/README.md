@@ -3,6 +3,8 @@ name: PR Visualization
 description: Bundle for visualizing pull request age distribution using the Copilot Java SDK and JBang.
 ---
 
+This bundle is a valid [Agent Plugin 1.0](https://agent-plugins.org/) package. You can install it directly in VS Code by pointing the plugin installer at this directory, or use `jbang AiToolkit.java plugin package pr-visualization` to download and zip it.
+
 This bundle includes:
 
 - `skills/pr-visualization/SKILL.md` — an invocable VS Code skill that helps you run the PR age chart generator, interpret its output, and ask follow-up questions about PR health.
