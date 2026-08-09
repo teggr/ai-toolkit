@@ -673,28 +673,11 @@
       })
       .filter(item => installablePurposes.has(item.purpose));
 
-    const pluginReadmes = markdownFiles
-      .filter(n => /^[^/]+\/README\.md$/i.test(n.path))
-      .map(n => {
-        const [purpose] = n.path.split('/');
-        return { purpose, path: n.path, sha: n.sha };
-      })
-      .filter(plugin => installablePurposes.has(plugin.purpose));
-
-    const pluginReadmeByPurpose = new Map(pluginReadmes.map(plugin => [plugin.purpose, plugin]));
     const pluginPurposes = [...installablePurposes].sort();
 
     const plugins = await Promise.all(pluginPurposes.map(async purpose => {
-      const readme = pluginReadmeByPurpose.get(purpose);
-      let markdown = '';
-      let frontMatter = null;
       let manifestKeywords = [];
       let manifestData = null;
-
-      if (readme) {
-        markdown = await fetchMarkdown(readme.path);
-        frontMatter = parseFrontMatter(markdown);
-      }
 
       try {
         manifestData = await fetchJson(`${purpose}/plugin.json`);
@@ -713,17 +696,16 @@
         .sort((a, b) => KNOWN_TYPES.indexOf(a) - KNOWN_TYPES.indexOf(b));
 
       return {
-        name: manifestData?.name || frontMatter?.data?.name || purpose,
-        description: manifestData?.description || frontMatter?.data?.description || `${resources.length} resource${resources.length === 1 ? '' : 's'}`,
+        name: manifestData?.name || purpose,
+        description: manifestData?.description || `${resources.length} resource${resources.length === 1 ? '' : 's'}`,
         purpose,
-        path: readme?.path || `${purpose}/README.md`,
+        path: `${purpose}/plugin.json`,
         type: 'plugin',
-        sha: readme?.sha || null,
+        sha: null,
         types,
         keywords: [...new Set(manifestKeywords)],
         resourceCount: resources.length,
-        markdown,
-        frontMatter,
+        resources,
         manifest: manifestData,
       };
     }));
@@ -933,16 +915,24 @@
     document.body.style.overflow = 'hidden';
 
     try {
-      const md = item.markdown || await fetchMarkdown(item.path);
-      const frontMatter = item.frontMatter || parseFrontMatter(md);
-      const markdownBody = frontMatter ? frontMatter.content : md;
       const isPlugin = item.type === 'plugin';
-      const metadataSection = isPlugin
-        ? renderPluginManifest(item.manifest)
-        : renderFrontMatter(frontMatter);
-      body.innerHTML = isPlugin
-        ? `${metadataSection}${renderPluginInstallSection(item)}`
-        : `${metadataSection}${marked.parse(markdownBody)}`;
+      let rawContent = '';
+      let contentType = 'text/markdown';
+
+      if (isPlugin) {
+        rawContent = JSON.stringify(item.manifest || {}, null, 2);
+        body.innerHTML = `${renderPluginManifest(item.manifest)}${renderPluginResources(item)}${renderPluginInstallSection(item)}`;
+      } else {
+        rawContent = await fetchMarkdown(item.path);
+        const frontMatter = parseFrontMatter(rawContent);
+        const markdownBody = frontMatter ? frontMatter.content : rawContent;
+        const metadataSection = renderFrontMatter(frontMatter);
+        body.innerHTML = `${metadataSection}${marked.parse(markdownBody)}`;
+      }
+
+      if (isPlugin) {
+        contentType = 'application/json';
+      }
 
       if (isPlugin) {
         const installJbangBtn = document.getElementById('modal-install-jbang-btn');
@@ -963,7 +953,7 @@
 
       copyBtn.disabled = false;
       copyBtn.onclick = async () => {
-        await navigator.clipboard.writeText(md);
+        await navigator.clipboard.writeText(rawContent);
         copyBtn.classList.add('copied');
         copyBtn.querySelector('span').textContent = 'Copied!';
         setTimeout(() => {
@@ -974,7 +964,7 @@
 
       dlBtn.disabled = false;
       dlBtn.onclick = () => {
-        const blob = new Blob([md], { type: 'text/markdown' });
+        const blob = new Blob([rawContent], { type: contentType });
         const url  = URL.createObjectURL(blob);
         const a    = document.createElement('a');
         a.href     = url;
@@ -1127,6 +1117,23 @@
         <p>Install this plugin with JBang:</p>
         <pre><code>${escapeHtml(command)}</code></pre>
         <button class="modal-action-btn" id="modal-install-jbang-btn" type="button">Copy JBang</button>
+      </section>
+    `;
+  }
+
+  function renderPluginResources(item) {
+    if (!Array.isArray(item.resources) || item.resources.length === 0) return '';
+
+    const resourceList = item.resources
+      .slice()
+      .sort((a, b) => a.path.localeCompare(b.path))
+      .map(resource => `<li><code>${escapeHtml(resource.path)}</code></li>`)
+      .join('');
+
+    return `
+      <section>
+        <h2>Included resources</h2>
+        <ul>${resourceList}</ul>
       </section>
     `;
   }
