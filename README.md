@@ -64,6 +64,7 @@ jbang AiToolkit.java install --global --force discovery
 
 ### `uninstall <bundle>` — Remove a bundle
 
+
 ```bash
 jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <bundle>
 ```
@@ -81,7 +82,83 @@ jbang AiToolkit.java uninstall discovery
 jbang AiToolkit.java uninstall --global --force discovery
 ```
 
-For full CLI help:
+### `plugin package <bundle>` — Package a bundle as an Agent Plugin
+
+Downloads all files for a bundle into a local directory and creates a `.zip` archive suitable for manual VS Code installation or marketplace submission.
+
+```bash
+jbang AiToolkit.java plugin package [--output <dir>] <bundle>
+```
+
+Options:
+
+- `--output <dir>` — Output directory (default: `./ai-toolkit-plugins`)
+
+Examples:
+
+```bash
+jbang AiToolkit.java plugin package discovery
+jbang AiToolkit.java plugin package --output /tmp/plugins review
+```
+
+### `plugin validate <path>` — Validate a local plugin directory
+
+Checks that a local directory is a valid Agent Plugin 1.0 package: verifies `plugin.json` is present, the `$schema` is correct, and the `skills/` layout is well-formed.
+
+```bash
+jbang AiToolkit.java plugin validate <path>
+```
+
+Example:
+
+```bash
+jbang AiToolkit.java plugin validate ./discovery
+```
+
+### Run directly from GitHub
+
+You can run the script without cloning the repository by passing the raw GitHub URL to JBang:
+
+```bash
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery
+```
+
+For help:
+
+```bash
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java --help
+```
+
+## Plugin format
+
+Every bundle in this repository is also a valid [Agent Plugin 1.0](https://agent-plugins.org/) package. Each bundle directory contains a `plugin.json` manifest that declares the canonical schema, so plugins work across GitHub Copilot in VS Code, GitHub Copilot CLI, and the GitHub Copilot app.
+
+```json
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "review",
+  "description": "...",
+  "version": "1.0.0"
+}
+```
+
+Skills are auto-discovered from the `skills/` folder — no explicit listing in the manifest is needed. The `skills/<skill-name>/SKILL.md` layout already matches the Agent Plugin spec.
+
+To install a bundle as a VS Code plugin, use `plugin package` to download and zip it, then install the zip via VS Code's plugin marketplace UI, or point VS Code at the unpacked directory.
+
+See the [VS Code agent plugins documentation](https://code.visualstudio.com/docs/agent-customization/agent-plugins) and the [Agent Plugins open standard](https://agent-plugins.org/) for details.
+
+## Packaging
+
+Each bundle is dual-purpose:
+
+| Usage | How |
+|---|---|
+| JBang toolkit install | `jbang AiToolkit.java install <bundle>` copies files into `.github` or `~/.copilot` or `.ai` |
+| Agent Plugin 1.0 package | `jbang AiToolkit.java plugin package <bundle>` downloads and zips the bundle for VS Code plugin install |
+
+## Starter structure
 
 ```bash
 jbang AiToolkit.java --help
