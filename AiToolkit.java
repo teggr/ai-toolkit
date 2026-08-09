@@ -33,7 +33,7 @@ import java.util.zip.ZipOutputStream;
 @Command(
     name = "ai-toolkit",
     mixinStandardHelpOptions = true,
-    subcommands = {AiToolkit.InstallCommand.class, AiToolkit.ListCommand.class, AiToolkit.PluginCommand.class},
+    subcommands = {AiToolkit.InstallCommand.class, AiToolkit.ListCommand.class, AiToolkit.PluginCommand.class, AiToolkit.UninstallCommand.class},
     description = "Manage Copilot customization bundles from the teggr/ai-toolkit repository.")
 class AiToolkit implements Runnable {
 
@@ -296,6 +296,106 @@ class AiToolkit implements Runnable {
             } finally {
                 Files.deleteIfExists(temp);
             }
+        }
+    }
+
+    // ─── uninstall ────────────────────────────────────────────────────────────
+
+    @Command(
+        name = "uninstall",
+        mixinStandardHelpOptions = true,
+        description = "Remove a previously installed bundle from .github (or a custom target).")
+    static class UninstallCommand implements Callable<Integer> {
+
+        @Parameters(index = "0", paramLabel = "<bundle>",
+            description = "Bundle to uninstall (e.g. discovery).")
+        String bundle;
+
+        @Option(names = "--target", paramLabel = "<dir>",
+            description = "Install directory to remove from (default: ./.github).")
+        Path targetDir;
+
+        @Option(names = "--global",
+            description = "Remove from ~/.copilot (overrides --target).")
+        boolean global;
+
+        @Option(names = "--force",
+            description = "Delete files without prompting.")
+        boolean force;
+
+        private final HttpClient client = newHttpClient();
+
+        @Override
+        public Integer call() throws Exception {
+            String bundlePrefix = bundle + "/";
+            Path installRoot = resolveInstallRoot();
+
+            if (!Files.isDirectory(installRoot)) {
+                System.err.printf("Install directory does not exist: %s%n", installRoot.toAbsolutePath());
+                return 1;
+            }
+
+            BranchTree tree = fetchTree(client, true);
+            List<String> files = extractPaths(tree.json(), "blob", bundlePrefix);
+
+            if (files.isEmpty()) {
+                System.err.printf("No files found under %s in %s/%s.%n", bundlePrefix, OWNER, REPO);
+                return 1;
+            }
+
+            files.sort(Comparator.naturalOrder());
+            System.out.printf("Uninstalling bundle '%s' from %s%n", bundle, installRoot.toAbsolutePath());
+            System.out.printf("Found %d files.%n", files.size());
+
+            int removed = 0, skipped = 0, missing = 0;
+
+            for (int i = 0; i < files.size(); i++) {
+                String remotePath = files.get(i);
+                String relativePath = remotePath.substring(bundlePrefix.length());
+                Path target = installRoot.resolve(relativePath).normalize();
+
+                System.out.printf("[%d/%d] %s%n", i + 1, files.size(), target);
+
+                if (!Files.exists(target)) {
+                    missing++;
+                    System.out.println("  not found, skipping");
+                    continue;
+                }
+
+                boolean doDelete = force;
+                if (!doDelete) {
+                    Console console = System.console();
+                    if (console == null) {
+                        System.out.println("  exists. no interactive console; skipping (use --force to delete).");
+                        skipped++;
+                        continue;
+                    }
+                    String answer = console.readLine("  delete? [y]es / [n]o: ");
+                    doDelete = answer != null && answer.trim().equalsIgnoreCase("y");
+                }
+
+                if (doDelete) {
+                    try {
+                        Files.delete(target);
+                        removed++;
+                        System.out.println("  removed");
+                    } catch (IOException ex) {
+                        System.err.printf("  failed: %s%n", ex.getMessage());
+                    }
+                } else {
+                    skipped++;
+                    System.out.println("  skipped");
+                }
+            }
+
+            System.out.printf("%nSummary: removed=%d skipped=%d not-found=%d%n", removed, skipped, missing);
+            return 0;
+        }
+
+        private Path resolveInstallRoot() {
+            if (global) return Paths.get(System.getProperty("user.home"), ".copilot");
+            if (targetDir != null) return targetDir.toAbsolutePath().normalize();
+            return Paths.get(System.getProperty("user.dir"), ".github");
         }
     }
 

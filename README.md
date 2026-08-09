@@ -6,13 +6,35 @@ A collection of Copilot customization resources focused on skills, agents, and c
 
 > Prompt files (`*.prompt.md`) are considered legacy in this repository. For cross-harness compatibility, create and maintain **skills** instead of prompts.
 
-## CLI installer
+## Install
 
-Use the JBang script `AiToolkit.java` to manage Copilot customization bundles from this repository.
+### Option A — curl (no clone required)
+
+Run the installer directly from the raw GitHub URL with JBang. No cloning needed.
+
+```bash
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list
+jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery
+```
+
+### Option B — clone with git
+
+```bash
+git clone https://github.com/teggr/ai-toolkit
+cd ai-toolkit
+jbang AiToolkit.java list
+jbang AiToolkit.java install discovery
+```
+
+### Option C — local (already cloned)
+
+If you already have the repository locally, run from the repo root:
 
 ```bash
 jbang AiToolkit.java <command> [options]
 ```
+
+---
 
 ### `list` — Show available bundles
 
@@ -38,6 +60,26 @@ Examples:
 jbang AiToolkit.java install discovery
 jbang AiToolkit.java install --target /tmp/copilot-resources discovery
 jbang AiToolkit.java install --global --force discovery
+```
+
+### `uninstall <bundle>` — Remove a bundle
+
+
+```bash
+jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <bundle>
+```
+
+Options:
+
+- `--target <dir>` — Install directory to remove from (default: `./.github`)
+- `--global` — Remove from `~/.copilot` (overrides `--target`)
+- `--force` — Delete files without prompting
+
+Examples:
+
+```bash
+jbang AiToolkit.java uninstall discovery
+jbang AiToolkit.java uninstall --global --force discovery
 ```
 
 ### `plugin package <bundle>` — Package a bundle as an Agent Plugin
@@ -113,22 +155,34 @@ Each bundle is dual-purpose:
 
 | Usage | How |
 |---|---|
-| JBang toolkit install | `jbang AiToolkit.java install <bundle>` copies files into `.github` or `~/.copilot` |
+| JBang toolkit install | `jbang AiToolkit.java install <bundle>` copies files into `.github` or `~/.copilot` or `.ai` |
 | Agent Plugin 1.0 package | `jbang AiToolkit.java plugin package <bundle>` downloads and zips the bundle for VS Code plugin install |
 
 ## Starter structure
 
-Resources are organized by **purpose** and then by **type**.
+```bash
+jbang AiToolkit.java --help
+```
 
-Example:
+## Bundles
 
-- `discovery/agents/discovery.md`
-- `discovery/skills/`
-- `discovery/instructions/`
+Resources are organized by **purpose** and then by **type** (`agents/`, `skills/`, `instructions/`).
 
-## Skills
+| Bundle | Type | Resource | Description |
+|---|---|---|---|
+| `discovery` | agent | `agents/discovery.md` | Discovery agent — clarifies goals, scope, dependencies, risks, and unknowns before planning |
+| `review` | skill | `skills/agent-pr-review/SKILL.md` | Invocable skill — six-step structured review for agent-generated PRs (CI, reuse, security, evidence) |
+| `review` | instructions | `instructions/agent-pr-review.md` | Copilot code review instructions — drop-in mechanical checks for every PR |
+| `deploy4j` | skill | `skills/deploy4j/SKILL.md` | Reference skill — deploy4j CLI install, init, config/secrets, setup, and deploy workflows |
+| `ai-toolkit` | skill | `skills/ai-toolkit/SKILL.md` | Invocable skill — discover, install, update, and manage toolkit bundles |
+| `screaming-architecture` | skill | `skills/screaming-architecture/SKILL.md` | Invocable skill — design and review package-by-feature architecture (Screaming Architecture) |
+| `screaming-architecture` | instructions | `instructions/screaming-architecture.md` | Copilot agent instructions — enforce feature-first architecture review with weighted scorecard |
+| `spring-htmx` | skill | `skills/spring-htmx-skill.md` | Reference skill — htmx-spring-boot library (Maven, headers, fragments, Security, Thymeleaf) |
+| `spring-j2html` | skill | `skills/spring-j2html-skill.md` | Reference skill — j2html type-safe HTML builder with Spring Boot |
 
-### spring-htmx-skill
+### Detail
+
+#### spring-htmx
 
 **Path:** `spring-htmx/skills/spring-htmx-skill.md`
 
@@ -136,7 +190,7 @@ Reference skill for using the [htmx-spring-boot](https://github.com/wimdeblauwe/
 
 ## Review
 
-### agent-pr-review skill
+#### agent-pr-review
 
 **Path:** `review/skills/agent-pr-review/SKILL.md`
 
@@ -149,7 +203,7 @@ Copilot code review custom instructions that automate the mechanical checks on e
 
 ## Deploy4j
 
-### deploy4j skill
+#### deploy4j
 
 **Path:** `deploy4j/skills/deploy4j/SKILL.md`
 
@@ -157,7 +211,7 @@ Reference skill for [deploy4j](https://deploy4j.dev/) installation and operation
 
 ## AI Toolkit
 
-### ai-toolkit skill
+#### ai-toolkit
 
 **Path:** `ai-toolkit/skills/ai-toolkit/SKILL.md`
 
@@ -165,7 +219,7 @@ An invocable skill for managing this toolkit's bundles end-to-end: discover avai
 
 ## Architecture
 
-### screaming-architecture skill
+#### screaming-architecture
 
 **Path:** `screaming-architecture/skills/screaming-architecture/SKILL.md`
 
@@ -174,6 +228,14 @@ An invocable skill for designing, creating, and reviewing architecture with pack
 **Path:** `screaming-architecture/instructions/screaming-architecture.md`
 
 Copilot agent instructions that reference the `screaming-architecture` skill and enforce feature-first architecture review outputs, including the weighted scorecard.
+
+## Spring j2html
+
+#### spring-j2html
+
+**Path:** `spring-j2html/skills/j2html-extensions/SKILL.md`
+
+Reference skill for working with the [j2html-extensions](https://github.com/teggr/j2html-extensions) library in Spring Boot applications. Covers Maven setup, the Spring Boot starter, core extensions, Bootstrap classes, HTMX attributes, and the j2html template engine. Not invocable — use as context when building type-safe HTML views with Spring Boot.
 
 ## References
 
