@@ -268,17 +268,42 @@
     </article>
 
     <article class="card">
-      <h2>Two ways to use it</h2>
+      <h2>Three ways to use it</h2>
       <ul>
-        <li>Download or clone this repository, then run <code>AiToolkit.java</code> locally.</li>
-        <li>Skip the download and run the same installer directly from the raw GitHub URL.</li>
+        <li>Run the installer directly with <code>curl</code> / JBang — no clone needed.</li>
+        <li>Clone with <code>git</code>, then run <code>AiToolkit.java</code> locally.</li>
+        <li>Already have the repository? Run from the repo root.</li>
       </ul>
     </article>
   </section>
 
   <section class="steps" aria-label="Install steps">
     <article class="step">
-      <h2>Option 1: Download or clone the repository</h2>
+      <h2>Option 1: curl — no clone required</h2>
+      <p>Run the installer directly from GitHub. Requires Java 21+ and JBang, but no local copy of the repository.</p>
+
+      <h3>List available bundles</h3>
+      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list</code></pre>
+
+      <h3>Install a bundle into the current repository</h3>
+      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery</code></pre>
+
+      <h3>Show CLI help</h3>
+      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java --help</code></pre>
+    </article>
+
+    <article class="step">
+      <h2>Option 2: clone with git</h2>
+      <p>Clone the repository first, then run the local installer.</p>
+
+      <pre><code>git clone https://github.com/teggr/ai-toolkit
+cd ai-toolkit
+jbang AiToolkit.java list
+jbang AiToolkit.java install discovery</code></pre>
+    </article>
+
+    <article class="step">
+      <h2>Option 3: already have the repository</h2>
       <p>If you already have this repository locally, run the installer from the repo root.</p>
 
       <h3>List available bundles</h3>
@@ -295,17 +320,17 @@ jbang AiToolkit.java install --global --force discovery</code></pre>
     </article>
 
     <article class="step">
-      <h2>Option 2: Run directly from GitHub with JBang</h2>
-      <p>This path is useful when you want the installer without cloning the repository first.</p>
+      <h2>Uninstall a bundle</h2>
+      <p>Remove a previously installed bundle. Mirrors the same options as <code>install</code>.</p>
 
-      <h3>List available bundles</h3>
-      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list</code></pre>
+      <h3>Remove from the current repository</h3>
+      <pre><code>jbang AiToolkit.java uninstall discovery</code></pre>
 
-      <h3>Install a bundle</h3>
-      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery</code></pre>
+      <h3>Remove from the global folder</h3>
+      <pre><code>jbang AiToolkit.java uninstall --global --force discovery</code></pre>
 
-      <h3>Show CLI help</h3>
-      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java --help</code></pre>
+      <h3>Remove using the remote installer (no clone)</h3>
+      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java uninstall discovery</code></pre>
     </article>
   </section>
 
