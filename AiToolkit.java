@@ -140,6 +140,26 @@ class AiToolkit implements Runnable {
             "https://raw.githubusercontent.com/%s/%s/%s/%s", OWNER, REPO, branch, path);
     }
 
+    static String fetchText(HttpClient client, String url) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+            .timeout(Duration.ofSeconds(30))
+            .header("User-Agent", "AiToolkit-installer")
+            .GET()
+            .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() != 200) {
+            throw new IOException("HTTP " + response.statusCode());
+        }
+        return response.body();
+    }
+
+    static String extractJsonStringField(String json, String fieldName) {
+        Pattern p = Pattern.compile("\\\"" + Pattern.quote(fieldName) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"\\\\])*)\\\"");
+        Matcher m = p.matcher(json);
+        if (!m.find()) return null;
+        return unescapeJsonString(m.group(1));
+    }
+
     enum FileAction { OVERWRITE, SKIP }
     enum Decision { PROMPT, ALL_OVERWRITE, ALL_SKIP }
     record BranchTree(String branch, String json) {}
@@ -411,21 +431,33 @@ class AiToolkit implements Runnable {
 
         @Override
         public Integer call() throws Exception {
-            BranchTree tree = fetchTree(client, false);
-            List<String> bundles = extractPaths(tree.json(), "tree", null)
+            BranchTree tree = fetchTree(client, true);
+            List<String> manifests = extractPaths(tree.json(), "blob", null)
                 .stream()
-                .filter(p -> !p.contains("/"))
+                // A valid installable bundle must have a top-level plugin.json manifest.
+                .filter(p -> p.endsWith("/plugin.json") && p.indexOf('/') == p.lastIndexOf('/'))
                 .sorted()
                 .toList();
 
-            if (bundles.isEmpty()) {
+            if (manifests.isEmpty()) {
                 System.out.println("No bundles found.");
                 return 1;
             }
 
             System.out.printf("Available bundles in %s/%s (%s):%n", OWNER, REPO, tree.branch());
-            for (String bundle : bundles) {
-                System.out.printf("  %s%n", bundle);
+            for (String manifestPath : manifests) {
+                String bundle = manifestPath.substring(0, manifestPath.indexOf('/'));
+                String description = "(no description)";
+                try {
+                    String manifestJson = fetchText(client, rawUrl(tree.branch(), manifestPath));
+                    String parsed = extractJsonStringField(manifestJson, "description");
+                    if (parsed != null && !parsed.isBlank()) {
+                        description = parsed.trim();
+                    }
+                } catch (Exception ignored) {
+                    // Keep listing bundles even if one manifest cannot be read.
+                }
+                System.out.printf("  %s - %s%n", bundle, description);
             }
             return 0;
         }
