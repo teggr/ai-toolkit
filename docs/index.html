@@ -308,6 +308,7 @@
     .badge-prompts    { background: rgba(63,185,80,0.2);   color: #56d364; }
     .badge-instructions { background: rgba(210,153,34,0.2); color: #e3b341; }
     .badge-plugin     { background: rgba(163,113,247,0.2); color: #d2a8ff; }
+    .badge-mcp        { background: rgba(20,184,166,0.2);  color: #5eead4; }
 
     .card-description {
       color: var(--muted);
@@ -629,9 +630,10 @@
     skills: '⚡',
     prompts: '💬',
     instructions: '📋',
+    mcp: '🛠️',
   };
 
-  const KNOWN_TYPES = ['agents', 'skills', 'prompts', 'instructions'];
+  const KNOWN_TYPES = ['agents', 'skills', 'prompts', 'instructions', 'mcp'];
 
   // ── State ────────────────────────────────────────────────
   let allItems = [];   // { name, path, purpose, type, sha }
@@ -673,6 +675,13 @@
       })
       .filter(item => installablePurposes.has(item.purpose));
 
+    // Purposes that have an mcp.json file — used to show the MCP badge.
+    const purposesWithMcp = new Set(
+      data.tree
+        .filter(n => n.type === 'blob' && /^[^/]+\/mcp\.json$/i.test(n.path))
+        .map(n => n.path.split('/')[0])
+    );
+
     const pluginPurposes = [...installablePurposes].sort();
 
     const plugins = await Promise.all(pluginPurposes.map(async purpose => {
@@ -692,7 +701,9 @@
       }
 
       const resources = items.filter(item => item.purpose === purpose);
-      const types = [...new Set(resources.map(item => item.type))]
+      const resourceTypes = [...new Set(resources.map(item => item.type))];
+      if (purposesWithMcp.has(purpose)) resourceTypes.push('mcp');
+      const types = resourceTypes
         .sort((a, b) => KNOWN_TYPES.indexOf(a) - KNOWN_TYPES.indexOf(b));
 
       return {

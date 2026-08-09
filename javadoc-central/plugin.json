@@ -1,0 +1,15 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "javadoc-central",
+  "description": "Agent plugin for browsing and linking to JavaDoc for any Maven Central artifact via javadocs.dev.",
+  "keywords": [
+    "java",
+    "javadoc",
+    "maven",
+    "maven-central",
+    "documentation"
+  ],
+  "version": "1.0.0",
+  "homepage": "https://teggr.github.io/ai-toolkit/",
+  "repository": "https://github.com/teggr/ai-toolkit"
+}
