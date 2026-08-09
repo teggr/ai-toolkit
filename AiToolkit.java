@@ -159,10 +159,23 @@ class AiToolkit implements Runnable {
         return ROOT_INSTRUCTIONS_FILE.equals(relativePath);
     }
 
+    static boolean isMarkdownFile(String relativePath) {
+        Path fileNamePath = Paths.get(relativePath).getFileName();
+        if (fileNamePath == null) return false;
+        return fileNamePath.toString().toLowerCase(Locale.ROOT).endsWith(".md");
+    }
+
     static boolean isSpecificInstructionsFile(String relativePath) {
         Path fileNamePath = Paths.get(relativePath).getFileName();
         if (fileNamePath == null) return false;
         return fileNamePath.toString().endsWith(SPECIFIC_INSTRUCTIONS_SUFFIX);
+    }
+
+    static boolean isMergeInstructionsFile(String relativePath) {
+        if (isSpecificInstructionsFile(relativePath)) return false;
+        if (isRootInstructionsFile(relativePath)) return true;
+        if (!relativePath.startsWith("instructions/")) return false;
+        return isMarkdownFile(relativePath);
     }
 
     static Path mapDestination(Path installRoot, String relativePath) {
@@ -197,6 +210,30 @@ class AiToolkit implements Runnable {
         return "<" + sectionTag + ">" + System.lineSeparator()
             + normalized + System.lineSeparator()
             + "</" + sectionTag + ">";
+    }
+
+    static String combineInstructionFragments(List<InstructionFragment> fragments) {
+        if (fragments.isEmpty()) return "";
+
+        if (fragments.size() == 1) {
+            return fragments.getFirst().content().strip();
+        }
+
+        String lineSeparator = System.lineSeparator();
+        StringBuilder combined = new StringBuilder();
+        for (int i = 0; i < fragments.size(); i++) {
+            InstructionFragment fragment = fragments.get(i);
+            if (i > 0) {
+                combined.append(lineSeparator).append(lineSeparator);
+            }
+            combined
+                .append("<!-- source: ")
+                .append(fragment.relativePath())
+                .append(" -->")
+                .append(lineSeparator)
+                .append(fragment.content().strip());
+        }
+        return combined.toString();
     }
 
     static void upsertPluginInstructionSection(Path targetFile, String plugin, String instructionContent) throws IOException {
@@ -312,6 +349,7 @@ class AiToolkit implements Runnable {
     enum FileAction { OVERWRITE, SKIP }
     enum Decision { PROMPT, ALL_OVERWRITE, ALL_SKIP }
     record BranchTree(String branch, String json) {}
+    record InstructionFragment(String relativePath, String content) {}
 
     // ─── install ──────────────────────────────────────────────────────────────
 
@@ -368,20 +406,20 @@ class AiToolkit implements Runnable {
             System.out.printf("Found %d files.%n", files.size());
 
             int installed = 0, skipped = 0, failed = 0, merged = 0;
+            List<InstructionFragment> instructionFragments = new ArrayList<>();
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
                 String relativePath = remotePath.substring(bundlePrefix.length());
 
-                if (isRootInstructionsFile(relativePath)) {
-                    Path rootInstructions = rootInstructionsTarget(installRoot);
-                    System.out.printf("[%d/%d] %s -> merge into %s%n", i + 1, files.size(), remotePath, rootInstructions);
+                if (isMergeInstructionsFile(relativePath)) {
+                    System.out.printf("[%d/%d] %s -> queue for merged root instructions%n", i + 1, files.size(), remotePath);
 
                     try {
                         String instructionContent = fetchText(client, rawUrl(tree.branch(), remotePath));
-                        upsertPluginInstructionSection(rootInstructions, plugin, instructionContent);
+                        instructionFragments.add(new InstructionFragment(relativePath, instructionContent));
                         merged++;
-                        System.out.println("  merged");
+                        System.out.println("  queued for merge");
                     } catch (Exception ex) {
                         failed++;
                         System.err.printf("  failed: %s%n", ex.getMessage());
@@ -404,6 +442,19 @@ class AiToolkit implements Runnable {
                     downloadWithRetry(rawUrl(tree.branch(), remotePath), destination);
                     installed++;
                     System.out.println("  installed");
+                } catch (Exception ex) {
+                    failed++;
+                    System.err.printf("  failed: %s%n", ex.getMessage());
+                }
+            }
+
+            if (!instructionFragments.isEmpty()) {
+                Path rootInstructions = rootInstructionsTarget(installRoot);
+                System.out.printf("[merge] %d file(s) -> %s%n", instructionFragments.size(), rootInstructions);
+                try {
+                    String combinedInstructions = combineInstructionFragments(instructionFragments);
+                    upsertPluginInstructionSection(rootInstructions, plugin, combinedInstructions);
+                    System.out.println("  merged");
                 } catch (Exception ex) {
                     failed++;
                     System.err.printf("  failed: %s%n", ex.getMessage());
@@ -538,12 +589,20 @@ class AiToolkit implements Runnable {
             System.out.printf("Found %d files.%n", files.size());
 
             int removed = 0, skipped = 0, missing = 0, directoriesRemoved = 0, sectionsRemoved = 0;
+            boolean mergedSectionHandled = false;
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
                 String relativePath = remotePath.substring(bundlePrefix.length());
 
-                if (isRootInstructionsFile(relativePath)) {
+                if (isMergeInstructionsFile(relativePath)) {
+                    if (mergedSectionHandled) {
+                        System.out.printf("[%d/%d] %s%n", i + 1, files.size(), remotePath);
+                        System.out.println("  merged instruction source; section removal already handled");
+                        continue;
+                    }
+
+                    mergedSectionHandled = true;
                     Path rootInstructions = rootInstructionsTarget(installRoot);
                     System.out.printf("[%d/%d] remove merged section from %s%n", i + 1, files.size(), rootInstructions);
                     try {

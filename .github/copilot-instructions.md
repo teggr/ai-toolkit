@@ -23,9 +23,11 @@ Prompt files (`*.prompt.md`) are legacy and should not be added for new work. Us
 - New or updated Agent Plugins must follow the canonical Agent Plugins layout from the VS Code documentation: https://code.visualstudio.com/docs/agent-customization/agent-plugins
 - Required layout baseline: a root `plugin.json` manifest with the Agent Plugins schema, skills under `skills/`, and any additional portable components in the locations the canonical spec expects. Do not introduce non-standard plugin layouts for new Agent Plugins.
 - Agent plugin instruction files are split into two types:
-	- `instructions.md` at plugin root contains general guidance that should be merged into the install root instruction file.
+	- General instruction files are merged into the install root instruction file:
+		- `instructions.md` at plugin root
+		- any Markdown file under plugin `instructions/` that does **not** end with `*.instructions.md`
 	- Any `*.instructions.md` file contains specific rules and should be installed as a standalone file under the target `instructions/` folder.
-- During install, merge `instructions.md` into the root instruction file using a plugin-tagged section format:
+- During install, merge all general instruction files into the root instruction file using a plugin-tagged section format:
 	- `<plugin_name_instructions>...content...</plugin_name_instructions>` where `plugin_name` is the actual plugin id (for example, `discovery_instructions`).
 	- This section is replaceable on re-install and removable on uninstall.
 - Merge target selection rule:
