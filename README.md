@@ -13,8 +13,8 @@ A collection of Copilot customization resources focused on skills, agents, and c
 Run the installer directly from the GitHub-hosted `AiToolkit.java` URL with JBang. No cloning needed.
 
 ```bash
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java list
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java install discovery
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery
 ```
 
 ### Option B — clone with git
@@ -123,14 +123,14 @@ jbang AiToolkit.java plugin validate ./discovery
 You can run the script without cloning the repository by passing the GitHub-hosted `AiToolkit.java` URL to JBang:
 
 ```bash
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java list
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java install discovery
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery
 ```
 
 For help:
 
 ```bash
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java --help
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java --help
 ```
 
 ## Plugin format

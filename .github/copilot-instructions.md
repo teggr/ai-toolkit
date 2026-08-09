@@ -26,22 +26,22 @@ When a user asks you to install a bundle from this toolkit, use the JBang instal
 
 **List available bundles:**
 ```
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java list
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
 ```
 
 **Install a bundle into the current repository (`.github/`):**
 ```
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java install <bundle>
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install <bundle>
 ```
 
 **Install globally into `~/.copilot`:**
 ```
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java install --global <bundle>
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install --global <bundle>
 ```
 
 **Uninstall a bundle:**
 ```
-jbang https://github.com/teggr/ai-toolkit/AiToolkit.java uninstall <bundle>
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java uninstall <bundle>
 ```
 
 Use `--force` to skip prompts. Use `--target <dir>` to specify a custom install directory. The installer requires Java 21+ and JBang. If neither is available, instruct the user to follow the [install guide](https://teggr.github.io/ai-toolkit/install.html) manually.

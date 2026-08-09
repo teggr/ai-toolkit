@@ -16,8 +16,8 @@ jbang AiToolkit.java install [--target <dir> | --global] [--force] <bundle>
 Run directly from GitHub (without cloning):
 
 ```bash
-jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list
-jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install <bundle>
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install <bundle>
 ```
 
 ## Install roots
