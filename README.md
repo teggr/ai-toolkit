@@ -242,3 +242,4 @@ Reference skill for working with the [j2html-toolkit](https://github.com/teggr/j
 
 - https://docs.github.com/en/copilot
 - https://awesome-copilot.github.com/skills/
+- https://github.com/teggr/rebelstack-template — a reference usage of these skills for templating new projects with built-in skills
