@@ -254,7 +254,7 @@
   <section class="hero">
     <div class="eyebrow">Install Help</div>
     <h1>Install ai-toolkit bundles</h1>
-    <p>Use the JBang-based installer in this repository to list available bundles and copy them into your local <code>.github</code> folder or your global <code>~/.copilot</code> folder.</p>
+    <p>Use the JBang-based installer to install bundles into your own environment, whether that is a local <code>.github</code> folder, a global <code>~/.copilot</code> folder, or a custom target.</p>
   </section>
 
   <section class="grid" aria-label="Install overview">
@@ -270,31 +270,31 @@
     <article class="card">
       <h2>Three ways to use it</h2>
       <ul>
-        <li>Run the installer directly with <code>curl</code> / JBang — no clone needed.</li>
-        <li>Clone with <code>git</code>, then run <code>AiToolkit.java</code> locally.</li>
-        <li>Already have the repository? Run from the repo root.</li>
+        <li>Run the installer directly from GitHub with JBang — no clone needed.</li>
+        <li>Clone with <code>git</code>, then use the embedded install instructions to choose bundles.</li>
+        <li>Download raw files with <code>curl</code> if you prefer manual control over the install root.</li>
       </ul>
     </article>
   </section>
 
   <section class="steps" aria-label="Install steps">
     <article class="step">
-      <h2>Option 1: curl — no clone required</h2>
-      <p>Run the installer directly from GitHub. Requires Java 21+ and JBang, but no local copy of the repository.</p>
+      <h2>Option 1: JBang from GitHub</h2>
+      <p>Run the installer directly from the GitHub-hosted <code>AiToolkit.java</code> URL. Requires Java 21+ and JBang, but no local copy of the repository.</p>
 
       <h3>List available bundles</h3>
-      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list</code></pre>
+      <pre><code>jbang https://github.com/teggr/ai-toolkit/AiToolkit.java list</code></pre>
 
-      <h3>Install a bundle into the current repository</h3>
-      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery</code></pre>
+      <h3>Install a bundle into your environment</h3>
+      <pre><code>jbang https://github.com/teggr/ai-toolkit/AiToolkit.java install discovery</code></pre>
 
       <h3>Show CLI help</h3>
-      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java --help</code></pre>
+      <pre><code>jbang https://github.com/teggr/ai-toolkit/AiToolkit.java --help</code></pre>
     </article>
 
     <article class="step">
       <h2>Option 2: clone with git</h2>
-      <p>Clone the repository first, then run the local installer.</p>
+      <p>Clone the repository first, then use the embedded install guidance to choose bundles and target roots.</p>
 
       <pre><code>git clone https://github.com/teggr/ai-toolkit
 cd ai-toolkit
@@ -303,20 +303,14 @@ jbang AiToolkit.java install discovery</code></pre>
     </article>
 
     <article class="step">
-      <h2>Option 3: already have the repository</h2>
-      <p>If you already have this repository locally, run the installer from the repo root.</p>
+      <h2>Option 3: raw files via curl</h2>
+      <p>Download the raw files you need and place them into your preferred install root.</p>
 
-      <h3>List available bundles</h3>
-      <pre><code>jbang AiToolkit.java list</code></pre>
+      <h3>Download the skill files</h3>
+      <pre><code>curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/skills/ai-toolkit/SKILL.md
+curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/skills/ai-toolkit/docs/docs.md</code></pre>
 
-      <h3>Install a bundle into the current repository</h3>
-      <pre><code>jbang AiToolkit.java install discovery</code></pre>
-
-      <h3>Useful install variants</h3>
-      <pre><code>jbang AiToolkit.java install --target /tmp/copilot-resources discovery
-jbang AiToolkit.java install --global --force discovery</code></pre>
-
-      <div class="note">By default the installer writes into <code>./.github</code>. Use <code>--global</code> to install into your user-level <code>~/.copilot</code> folder instead.</div>
+      <div class="note">Use this path when you want to fetch raw files first, then arrange them under <code>./.github</code>, <code>~/.copilot</code>, or another target you control.</div>
     </article>
 
     <article class="step">
@@ -330,7 +324,7 @@ jbang AiToolkit.java install --global --force discovery</code></pre>
       <pre><code>jbang AiToolkit.java uninstall --global --force discovery</code></pre>
 
       <h3>Remove using the remote installer (no clone)</h3>
-      <pre><code>jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java uninstall discovery</code></pre>
+      <pre><code>jbang https://github.com/teggr/ai-toolkit/AiToolkit.java uninstall discovery</code></pre>
     </article>
   </section>
 
@@ -339,7 +333,7 @@ jbang AiToolkit.java install --global --force discovery</code></pre>
     <ul>
       <li>The installer fetches bundle files from <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>.</li>
       <li>Existing files are left alone unless you use <code>--force</code> or choose overwrite in the prompt.</li>
-      <li>Use <code>jbang ... install &lt;bundle&gt;</code> with any bundle name shown by <code>list</code>.</li>
+        <li>Use <code>jbang ... install &lt;bundle&gt;</code> with any bundle name shown by <code>list</code>, then target the environment you want.</li>
     </ul>
     <div class="actions">
       <a class="button-link" href="./">Browse bundles</a>

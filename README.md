@@ -8,16 +8,18 @@ A collection of Copilot customization resources focused on skills, agents, and c
 
 ## Install
 
-### Option A — curl (no clone required)
+### Option A — jbang from GitHub (no clone required)
 
-Run the installer directly from the raw GitHub URL with JBang. No cloning needed.
+Run the installer directly from the GitHub-hosted `AiToolkit.java` URL with JBang. No cloning needed.
 
 ```bash
-jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list
-jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery
+jbang https://github.com/teggr/ai-toolkit/AiToolkit.java list
+jbang https://github.com/teggr/ai-toolkit/AiToolkit.java install discovery
 ```
 
 ### Option B — clone with git
+
+Clone the repository, then use the embedded install guidance to pick and install bundles into your own environment.
 
 ```bash
 git clone https://github.com/teggr/ai-toolkit
@@ -26,12 +28,13 @@ jbang AiToolkit.java list
 jbang AiToolkit.java install discovery
 ```
 
-### Option C — local (already cloned)
+### Option C — raw files via curl
 
-If you already have the repository locally, run from the repo root:
+Download the raw files you need with `curl`, then place them into your preferred install root.
 
 ```bash
-jbang AiToolkit.java <command> [options]
+curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/skills/ai-toolkit/SKILL.md
+curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/skills/ai-toolkit/docs/docs.md
 ```
 
 ---
@@ -117,17 +120,17 @@ jbang AiToolkit.java plugin validate ./discovery
 
 ### Run directly from GitHub
 
-You can run the script without cloning the repository by passing the raw GitHub URL to JBang:
+You can run the script without cloning the repository by passing the GitHub-hosted `AiToolkit.java` URL to JBang:
 
 ```bash
-jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java list
-jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java install discovery
+jbang https://github.com/teggr/ai-toolkit/AiToolkit.java list
+jbang https://github.com/teggr/ai-toolkit/AiToolkit.java install discovery
 ```
 
 For help:
 
 ```bash
-jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java --help
+jbang https://github.com/teggr/ai-toolkit/AiToolkit.java --help
 ```
 
 ## Plugin format
