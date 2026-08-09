@@ -1,6 +1,8 @@
 # ai-toolkit bundle management guide
 
-Use this guide to manage Copilot customization bundles from `teggr/ai-toolkit` for local repositories and global Copilot configuration.
+Use this guide to manage Copilot customization bundles from `teggr/ai-toolkit` after they have been installed into a local repository or global Copilot configuration.
+
+This skill is optional. You do not need it to bootstrap your first bundle because `AiToolkit.java` already provides the install surface.
 
 ## Core command surface
 
@@ -26,7 +28,11 @@ jbang https://raw.githubusercontent.com/teggr/ai-toolkit/main/AiToolkit.java ins
 
 `--global` overrides `--target`.
 
-## 1) Discover available bundles
+## 1) Inspect toolkit-managed bundles
+
+Use this flow when you want to understand what `ai-toolkit`-managed skills, agents, or instructions are already present.
+
+Start by discovering the available upstream bundles:
 
 ```bash
 jbang AiToolkit.java list
@@ -34,7 +40,11 @@ jbang AiToolkit.java list
 
 This lists top-level bundle folders in `teggr/ai-toolkit`.
 
-## 2) Install a bundle
+Then compare those bundles to the files present in your chosen install root.
+
+## 2) Bootstrap or add a bundle
+
+For first-time installs, use these commands directly instead of trying to install this skill first.
 
 Local repository install:
 
@@ -88,6 +98,8 @@ jbang AiToolkit.java install [--target <same-root> | --global] <bundle>
 
 4. Use `--force` only when user approves overwriting local edits
 5. Report installed/skipped/failed counts
+
+This is the main ongoing management task for this skill.
 
 ## 5) Reconcile local and remote versions
 

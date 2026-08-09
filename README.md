@@ -30,7 +30,7 @@ jbang AiToolkit.java install discovery
 
 ### Option C — raw files via curl
 
-Download the raw files you need with `curl`, then place them into your preferred install root.
+Download the raw files only if you specifically want the optional `ai-toolkit` manager skill without cloning the repository. This is not the normal bootstrap path for installing bundles.
 
 ```bash
 curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/skills/ai-toolkit/SKILL.md
@@ -177,7 +177,7 @@ Resources are organized by **purpose** and then by **type** (`agents/`, `skills/
 | `review` | skill | `skills/agent-pr-review/SKILL.md` | Invocable skill — six-step structured review for agent-generated PRs (CI, reuse, security, evidence) |
 | `review` | instructions | `instructions/agent-pr-review.md` | Copilot code review instructions — drop-in mechanical checks for every PR |
 | `deploy4j` | skill | `skills/deploy4j/SKILL.md` | Reference skill — deploy4j CLI install, init, config/secrets, setup, and deploy workflows |
-| `ai-toolkit` | skill | `skills/ai-toolkit/SKILL.md` | Invocable skill — discover, install, update, and manage toolkit bundles |
+| `ai-toolkit` | skill | `skills/ai-toolkit/SKILL.md` | Optional manager skill — inspect, update, and reconcile toolkit-managed resources after bootstrap |
 | `screaming-architecture` | skill | `skills/screaming-architecture/SKILL.md` | Invocable skill — design and review package-by-feature architecture (Screaming Architecture) |
 | `screaming-architecture` | instructions | `instructions/screaming-architecture.md` | Copilot agent instructions — enforce feature-first architecture review with weighted scorecard |
 | `spring-htmx` | skill | `skills/spring-htmx-skill.md` | Reference skill — htmx-spring-boot library (Maven, headers, fragments, Security, Thymeleaf) |
@@ -218,7 +218,9 @@ Reference skill for [deploy4j](https://deploy4j.dev/) installation and operation
 
 **Path:** `ai-toolkit/skills/ai-toolkit/SKILL.md`
 
-An invocable skill for managing this toolkit's bundles end-to-end: discover available bundles, detect installed bundles in local (`.github`) or global (`~/.copilot`) roots, install/update bundles, and reconcile local files with remote bundle content.
+An invocable skill for managing toolkit-installed resources after bootstrap: inspect what bundles are present in local (`.github`) or global (`~/.copilot`) roots, update installed bundles, and reconcile local files with remote bundle content.
+
+It is optional and not part of the bootstrap path. First-time installs should go through `AiToolkit.java` directly.
 
 ## Architecture
 
