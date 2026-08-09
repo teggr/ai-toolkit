@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "deploy4j",
-  "description": "Bundle of deploy4j installation and deployment guidance for setting up and operating deploy4j-based app delivery.",
+  "description": "Agent plugin for deploy4j installation and deployment guidance for setting up and operating deploy4j-based app delivery.",
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"

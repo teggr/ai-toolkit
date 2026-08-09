@@ -307,7 +307,7 @@
     .badge-skills     { background: rgba(56,139,253,0.2);  color: #a5d6ff; }
     .badge-prompts    { background: rgba(63,185,80,0.2);   color: #56d364; }
     .badge-instructions { background: rgba(210,153,34,0.2); color: #e3b341; }
-    .badge-bundle     { background: rgba(163,113,247,0.2); color: #d2a8ff; }
+    .badge-plugin     { background: rgba(163,113,247,0.2); color: #d2a8ff; }
 
     .card-description {
       color: var(--muted);
@@ -559,7 +559,7 @@
         <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
           <path d="M10.68 11.74a6 6 0 1 1 1.06-1.06l3.04 3.03a.75.75 0 1 1-1.06 1.06zM1.5 6.5a4.5 4.5 0 1 0 9 0 4.5 4.5 0 0 0-9 0z"/>
         </svg>
-        <input type="search" id="search" placeholder="Search bundles…" />
+        <input type="search" id="search" placeholder="Search agent plugins…" />
       </div>
       <div id="type-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -616,7 +616,7 @@
   const BRANCH = 'main';
 
   const TYPE_ICONS = {
-    bundle: '📦',
+    plugin: '🔌',
     agents: '🤖',
     skills: '⚡',
     prompts: '💬',
@@ -627,7 +627,7 @@
 
   // ── State ────────────────────────────────────────────────
   let allItems = [];   // { name, path, purpose, type, sha }
-  let allBundles = []; // { name, description, purpose, path, type, types, resourceCount, markdown, frontMatter }
+  let allPlugins = []; // { name, description, purpose, path, type, types, resourceCount, markdown, frontMatter }
   let activeFilter = null;
   let activeSidebarItem = null;
   let searchQuery = '';
@@ -656,21 +656,21 @@
         };
       });
 
-    const bundleReadmes = markdownFiles
+    const pluginReadmes = markdownFiles
       .filter(n => /^[^/]+\/README\.md$/i.test(n.path))
       .map(n => {
         const [purpose] = n.path.split('/');
         return { purpose, path: n.path, sha: n.sha };
       });
 
-    const bundleReadmeByPurpose = new Map(bundleReadmes.map(bundle => [bundle.purpose, bundle]));
-    const bundlePurposes = [...new Set([
+    const pluginReadmeByPurpose = new Map(pluginReadmes.map(plugin => [plugin.purpose, plugin]));
+    const pluginPurposes = [...new Set([
       ...items.map(item => item.purpose),
-      ...bundleReadmes.map(bundle => bundle.purpose),
+      ...pluginReadmes.map(plugin => plugin.purpose),
     ])].sort();
 
-    const bundles = await Promise.all(bundlePurposes.map(async purpose => {
-      const readme = bundleReadmeByPurpose.get(purpose);
+    const plugins = await Promise.all(pluginPurposes.map(async purpose => {
+      const readme = pluginReadmeByPurpose.get(purpose);
       let markdown = '';
       let frontMatter = null;
 
@@ -688,7 +688,7 @@
         description: frontMatter?.data?.description || `${resources.length} resource${resources.length === 1 ? '' : 's'}`,
         purpose,
         path: readme?.path || `${purpose}/README.md`,
-        type: 'bundle',
+        type: 'plugin',
         sha: readme?.sha || null,
         types,
         resourceCount: resources.length,
@@ -698,8 +698,8 @@
     }));
 
     allItems = items;
-    allBundles = bundles;
-    return { items, bundles };
+    allPlugins = plugins;
+    return { items, plugins };
   }
 
   // ── Render sidebar ───────────────────────────────────────
@@ -716,8 +716,8 @@
 
       const heading = document.createElement('div');
       heading.className = 'sidebar-purpose';
-      const bundle = allBundles.find(item => item.purpose === purpose);
-      heading.innerHTML = `<i class="chevron">▾</i> ${escapeHtml(bundle?.name || purpose)}`;
+      const plugin = allPlugins.find(item => item.purpose === purpose);
+      heading.innerHTML = `<i class="chevron">▾</i> ${escapeHtml(plugin?.name || purpose)}`;
       heading.addEventListener('click', () => {
         heading.classList.toggle('collapsed');
         typeGroupWrap.style.display = heading.classList.contains('collapsed') ? 'none' : '';
@@ -755,18 +755,18 @@
   // ── Render cards ─────────────────────────────────────────
   function renderCards() {
     const cards = document.getElementById('cards');
-    let bundles = allBundles;
+    let plugins = allPlugins;
 
-    if (activeFilter) bundles = bundles.filter(bundle => bundle.types.includes(activeFilter));
-    if (searchQuery) bundles = bundles.filter(bundle =>
-      bundle.name.toLowerCase().includes(searchQuery) ||
-      bundle.description.toLowerCase().includes(searchQuery) ||
-      bundle.purpose.toLowerCase().includes(searchQuery) ||
-      bundle.types.some(type => type.toLowerCase().includes(searchQuery))
+    if (activeFilter) plugins = plugins.filter(plugin => plugin.types.includes(activeFilter));
+    if (searchQuery) plugins = plugins.filter(plugin =>
+      plugin.name.toLowerCase().includes(searchQuery) ||
+      plugin.description.toLowerCase().includes(searchQuery) ||
+      plugin.purpose.toLowerCase().includes(searchQuery) ||
+      plugin.types.some(type => type.toLowerCase().includes(searchQuery))
     );
 
-    if (bundles.length === 0) {
-      cards.innerHTML = `<div class="state-msg"><span class="emoji">🔍</span>No bundles match your search.</div>`;
+    if (plugins.length === 0) {
+      cards.innerHTML = `<div class="state-msg"><span class="emoji">🔍</span>No agent plugins match your search.</div>`;
       return;
     }
 
@@ -774,8 +774,8 @@
     const grid = document.createElement('div');
     grid.className = 'cards-grid';
 
-    for (const bundle of bundles) {
-      const resourceBadges = bundle.types
+    for (const plugin of plugins) {
+      const resourceBadges = plugin.types
         .map(type => `<span class="badge badge-${type}">${escapeHtml(type)}</span>`)
         .join('');
 
@@ -783,28 +783,28 @@
       card.className = 'card';
       card.innerHTML = `
         <div class="card-header">
-          <span class="card-icon">${TYPE_ICONS.bundle}</span>
-          <span class="card-name">${escapeHtml(bundle.name)}</span>
+          <span class="card-icon">${TYPE_ICONS.plugin}</span>
+          <span class="card-name">${escapeHtml(plugin.name)}</span>
         </div>
-        <div class="card-description">${escapeHtml(bundle.description)}</div>
-        <div class="card-path">${escapeHtml(bundle.path)}</div>
+        <div class="card-description">${escapeHtml(plugin.description)}</div>
+        <div class="card-path">${escapeHtml(plugin.path)}</div>
         <div class="card-footer">
           <div class="card-badges">
-            <span class="badge badge-bundle">${bundle.resourceCount} resource${bundle.resourceCount === 1 ? '' : 's'}</span>
+            <span class="badge badge-plugin">${plugin.resourceCount} resource${plugin.resourceCount === 1 ? '' : 's'}</span>
             ${resourceBadges}
           </div>
-          <button class="purpose-jbang-btn card-jbang-btn" type="button" title="${escapeHtml(jbangCommandForBundle(bundle.purpose))}">
+          <button class="purpose-jbang-btn card-jbang-btn" type="button" title="${escapeHtml(jbangCommandForPlugin(plugin.purpose))}">
             <span>Copy JBang</span>
           </button>
         </div>
       `;
 
-      card.addEventListener('click', () => openItem(bundle));
+      card.addEventListener('click', () => openItem(plugin));
 
       const jbangBtn = card.querySelector('.card-jbang-btn');
       jbangBtn.addEventListener('click', async event => {
         event.stopPropagation();
-        await navigator.clipboard.writeText(jbangCommandForBundle(bundle.purpose));
+        await navigator.clipboard.writeText(jbangCommandForPlugin(plugin.purpose));
         jbangBtn.classList.add('copied');
         jbangBtn.querySelector('span').textContent = 'Copied!';
         setTimeout(() => {
@@ -932,12 +932,12 @@
   });
 
   // ── Helpers ──────────────────────────────────────────────
-  function jbangCommandForBundle(bundle) {
-    return `jbang https://github.com/${OWNER}/${REPO}/blob/main/AiToolkit.java install ${bundle}`;
+  function jbangCommandForPlugin(agentPlugin) {
+    return `jbang https://github.com/${OWNER}/${REPO}/blob/main/AiToolkit.java install ${agentPlugin}`;
   }
 
   function jbangCommand(item) {
-    return jbangCommandForBundle(item.purpose);
+    return jbangCommandForPlugin(item.purpose);
   }
 
   async function fetchMarkdown(path) {
@@ -1019,11 +1019,11 @@
   // ── Boot ─────────────────────────────────────────────────
   (async () => {
     try {
-      const { items, bundles } = await loadTree();
+      const { items, plugins } = await loadTree();
       const count = items.length;
 
       document.getElementById('subtitle').innerHTML =
-        `${bundles.length} bundle${bundles.length !== 1 ? 's' : ''} · ${count} resource${count !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
+        `${plugins.length} agent plugin${plugins.length !== 1 ? 's' : ''} · ${count} resource${count !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
 
       buildSidebar(items);
       buildFilters(items);

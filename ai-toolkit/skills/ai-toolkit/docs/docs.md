@@ -1,8 +1,8 @@
-# ai-toolkit bundle management guide
+# ai-toolkit agent plugin management guide
 
-Use this guide to manage Copilot customization bundles from `teggr/ai-toolkit` after they have been installed into a local repository or global Copilot configuration.
+Use this guide to manage Copilot customization Agent Plugins from `teggr/ai-toolkit` after they have been installed into a local repository or global Copilot configuration.
 
-This skill is optional. You do not need it to bootstrap your first bundle because `AiToolkit.java` already provides the install surface.
+This skill is optional. You do not need it to bootstrap your first agent plugin because `AiToolkit.java` already provides the install surface.
 
 ## Core command surface
 
@@ -10,14 +10,14 @@ Run from a clone of this repository:
 
 ```bash
 jbang AiToolkit.java list
-jbang AiToolkit.java install [--target <dir> | --global] [--force] <bundle>
+jbang AiToolkit.java install [--target <dir> | --global] [--force] <agent-plugin>
 ```
 
 Run directly from GitHub (without cloning):
 
 ```bash
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
-jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install <bundle>
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install <agent-plugin>
 ```
 
 ## Install roots
@@ -28,21 +28,21 @@ jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install <bund
 
 `--global` overrides `--target`.
 
-## 1) Inspect toolkit-managed bundles
+## 1) Inspect toolkit-managed Agent Plugins
 
 Use this flow when you want to understand what `ai-toolkit`-managed skills, agents, or instructions are already present.
 
-Start by discovering the available upstream bundles:
+Start by discovering the available upstream Agent Plugins:
 
 ```bash
 jbang AiToolkit.java list
 ```
 
-This lists top-level bundle folders in `teggr/ai-toolkit`.
+This lists top-level agent plugin folders in `teggr/ai-toolkit`.
 
-Then compare those bundles to the files present in your chosen install root.
+Then compare those Agent Plugins to the files present in your chosen install root.
 
-## 2) Bootstrap or add a bundle
+## 2) Bootstrap or add an agent plugin
 
 For first-time installs, use these commands directly instead of trying to install this skill first.
 
@@ -66,34 +66,34 @@ jbang AiToolkit.java install --global spring-htmx
 
 Use `--force` to overwrite existing files without prompts.
 
-## 3) Determine what bundles are installed
+## 3) Determine what Agent Plugins are installed
 
 There is no dedicated `installed` command yet, so detect by file matching:
 
-1. Get remote bundle names: `jbang AiToolkit.java list`
-2. For each bundle, get its remote file set from the repository tree (`<bundle>/...`)
+1. Get remote agent plugin names: `jbang AiToolkit.java list`
+2. For each agent plugin, get its remote file set from the repository tree (`<agent-plugin>/...`)
 3. For the chosen install root (`.github`, `~/.copilot`, or custom):
-   - Remove the `<bundle>/` prefix from remote file paths
+   - Remove the `<agent-plugin>/` prefix from remote file paths
    - Check whether those relative files exist under the install root
-4. Mark bundle state:
+4. Mark agent plugin state:
    - **installed**: all expected files present
    - **partial**: some files present
    - **not installed**: no files present
 
-Prefer reporting partial bundles explicitly so users can repair drift.
+Prefer reporting partial Agent Plugins explicitly so users can repair drift.
 
-## 4) Update an installed bundle
+## 4) Update an installed agent plugin
 
 Updates are done by reinstalling into the same root.
 
 Safe update flow:
 
-1. Inventory installed bundles and select target bundle(s)
+1. Inventory installed Agent Plugins and select target agent plugin(s)
 2. Preview local modifications where possible (e.g., compare files before overwrite)
-3. Reinstall bundle into same root:
+3. Reinstall agent plugin into same root:
 
 ```bash
-jbang AiToolkit.java install [--target <same-root> | --global] <bundle>
+jbang AiToolkit.java install [--target <same-root> | --global] <agent-plugin>
 ```
 
 4. Use `--force` only when user approves overwriting local edits
@@ -103,7 +103,7 @@ This is the main ongoing management task for this skill.
 
 ## 5) Reconcile local and remote versions
 
-When local files diverge from remote bundle content:
+When local files diverge from remote agent plugin content:
 
 - **Keep local customizations**: skip overwrite and note drift
 - **Adopt remote latest**: reinstall with overwrite (`--force` or explicit overwrite confirmation)
@@ -112,6 +112,6 @@ When local files diverge from remote bundle content:
 Always report:
 
 - Target root used
-- Bundle(s) processed
+- agent plugin(s) processed
 - File outcomes (installed, skipped, failed)
 - Any unresolved drift or manual follow-up needed

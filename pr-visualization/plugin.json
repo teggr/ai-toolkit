@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "pr-visualization",
-  "description": "Bundle for visualizing pull request age distribution using the Copilot Java SDK and JBang.",
+  "description": "Agent plugin for visualizing pull request age distribution using the Copilot Java SDK and JBang.",
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"

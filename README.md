@@ -19,7 +19,7 @@ jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install disco
 
 ### Option B — clone with git
 
-Clone the repository, then use the embedded install guidance to pick and install bundles into your own environment.
+Clone the repository, then use the embedded install guidance to pick and install Agent Plugins into your own environment.
 
 ```bash
 git clone https://github.com/teggr/ai-toolkit
@@ -30,7 +30,7 @@ jbang AiToolkit.java install discovery
 
 ### Option C — raw files via curl
 
-Download the raw files only if you specifically want the optional `ai-toolkit` manager skill without cloning the repository. This is not the normal bootstrap path for installing bundles.
+Download the raw files only if you specifically want the optional `ai-toolkit` manager skill without cloning the repository. This is not the normal bootstrap path for installing Agent Plugins.
 
 ```bash
 curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/skills/ai-toolkit/SKILL.md
@@ -39,16 +39,18 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
 
 ---
 
-### `list` — Show available bundles
+## AiToolkit Operations (End Users)
+
+### `list` — Show available agent plugins
 
 ```bash
 jbang AiToolkit.java list
 ```
 
-### `install <bundle>` — Install a bundle
+### `install <agent-plugin>` — Install an agent plugin
 
 ```bash
-jbang AiToolkit.java install [--target <dir> | --global] [--force] <bundle>
+jbang AiToolkit.java install [--target <dir> | --global] [--force] <agent-plugin>
 ```
 
 Options:
@@ -65,11 +67,11 @@ jbang AiToolkit.java install --target /tmp/copilot-resources discovery
 jbang AiToolkit.java install --global --force discovery
 ```
 
-### `uninstall <bundle>` — Remove a bundle
+### `uninstall <agent-plugin>` — Remove an agent plugin
 
 
 ```bash
-jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <bundle>
+jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <agent-plugin>
 ```
 
 Options:
@@ -83,39 +85,6 @@ Examples:
 ```bash
 jbang AiToolkit.java uninstall discovery
 jbang AiToolkit.java uninstall --global --force discovery
-```
-
-### `plugin package <bundle>` — Package a bundle as an Agent Plugin
-
-Downloads all files for a bundle into a local directory and creates a `.zip` archive suitable for manual VS Code installation or marketplace submission.
-
-```bash
-jbang AiToolkit.java plugin package [--output <dir>] <bundle>
-```
-
-Options:
-
-- `--output <dir>` — Output directory (default: `./ai-toolkit-plugins`)
-
-Examples:
-
-```bash
-jbang AiToolkit.java plugin package discovery
-jbang AiToolkit.java plugin package --output /tmp/plugins review
-```
-
-### `plugin validate <path>` — Validate a local plugin directory
-
-Checks that a local directory is a valid Agent Plugin 1.0 package: verifies `plugin.json` is present, the `$schema` is correct, and the `skills/` layout is well-formed.
-
-```bash
-jbang AiToolkit.java plugin validate <path>
-```
-
-Example:
-
-```bash
-jbang AiToolkit.java plugin validate ./discovery
 ```
 
 ### Run directly from GitHub
@@ -133,9 +102,14 @@ For help:
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java --help
 ```
 
+## Maintenance Operations (Repository Development)
+
+Repository maintenance workflows are handled by skills under `.github/skills/`.
+Use `create-new-plugin` to scaffold agent plugins and apply its built-in structure and metadata checks.
+
 ## Plugin format
 
-Every bundle in this repository is also a valid [Agent Plugin 1.0](https://agent-plugins.org/) package. Each bundle directory contains a `plugin.json` manifest that declares the canonical schema, so plugins work across GitHub Copilot in VS Code, GitHub Copilot CLI, and the GitHub Copilot app.
+Every agent plugin in this repository is also a valid [Agent Plugin 1.0](https://agent-plugins.org/) package. Each agent plugin directory contains a `plugin.json` manifest that declares the canonical schema, so plugins work across GitHub Copilot in VS Code, GitHub Copilot CLI, and the GitHub Copilot app.
 
 ```json
 {
@@ -146,28 +120,22 @@ Every bundle in this repository is also a valid [Agent Plugin 1.0](https://agent
 }
 ```
 
-Skills are auto-discovered from the `skills/` folder — no explicit listing in the manifest is needed. The `skills/<skill-name>/SKILL.md` layout already matches the Agent Plugin spec.
+Skills are auto-discovered from the `skills/` folder — no explicit listing in the manifest is needed. The `skills/<skill-name>/SKILL.md` layout already matches the agent plugin spec.
 
 ### Install in VS Code
 
 The canonical source for this workflow is the official VS Code guide: [Discover and install plugins](https://code.visualstudio.com/docs/agent-customization/agent-plugins#_discover-and-install-plugins).
 
-To install one of these bundles in VS Code:
+To install one of these agent plugins in VS Code:
 
-1. Package a bundle locally, for example:
+1. In VS Code, open the Extensions view and search for `@agentPlugins`, or open Agent Customizations and choose the Agent Plugins experience.
 
-   ```bash
-   jbang AiToolkit.java plugin package discovery
-   ```
-
-2. In VS Code, open the Extensions view and search for `@agentPlugins`, or open Agent Customizations and choose the Agent Plugins experience.
-
-3. Install the plugin using one of the supported flows from the VS Code documentation:
+2. Install the plugin using one of the supported flows from the VS Code documentation:
    - install from a marketplace,
    - install from source via the Command Palette or Agent Customizations UI, or
    - register a local plugin directory with `chat.pluginLocations` in your VS Code settings.
 
-4. After installation, enable the plugin from the Agent Plugins - Installed view.
+3. After installation, enable the plugin from the Agent Plugins - Installed view.
 
 For local development, a plugin directory can be registered directly in settings like this:
 
@@ -181,14 +149,14 @@ For local development, a plugin directory can be registered directly in settings
 
 See also the [Agent Plugins open standard](https://agent-plugins.org/) for the portable plugin format details.
 
-## Packaging
+## Distribution Modes
 
-Each bundle is dual-purpose:
+Each agent plugin is dual-purpose:
 
 | Usage | How |
 |---|---|
-| JBang toolkit install | `jbang AiToolkit.java install <bundle>` copies files into `.github` or `~/.copilot` or `.ai` |
-| Agent Plugin 1.0 package | `jbang AiToolkit.java plugin package <bundle>` downloads and zips the bundle for VS Code plugin install |
+| JBang toolkit install | `jbang AiToolkit.java install <agent-plugin>` copies files into `.github` or `~/.copilot` or `.ai` |
+| Agent Plugin 1.0 directory | Install directly from an agent plugin directory (for example `./discovery`) in VS Code |
 
 ## Starter structure
 
@@ -196,17 +164,18 @@ Each bundle is dual-purpose:
 jbang AiToolkit.java --help
 ```
 
-## Bundles
+## Agent Plugins
 
 Resources are organized by **purpose** and then by **type** (`agents/`, `skills/`, `instructions/`).
 
-| Bundle | Type | Resource | Description |
+| Agent plugin | Type | Resource | Description |
 |---|---|---|---|
 | `discovery` | agent | `agents/discovery.md` | Discovery agent — clarifies goals, scope, dependencies, risks, and unknowns before planning |
 | `review` | skill | `skills/agent-pr-review/SKILL.md` | Invocable skill — six-step structured review for agent-generated PRs (CI, reuse, security, evidence) |
 | `review` | instructions | `instructions/agent-pr-review.md` | Copilot code review instructions — drop-in mechanical checks for every PR |
 | `deploy4j` | skill | `skills/deploy4j/SKILL.md` | Reference skill — deploy4j CLI install, init, config/secrets, setup, and deploy workflows |
 | `ai-toolkit` | skill | `skills/ai-toolkit/SKILL.md` | Optional manager skill — inspect, update, and reconcile toolkit-managed resources after bootstrap |
+| `create-new-plugin` | skill | `skills/create-new-plugin/SKILL.md` | Invocable skill — scaffold a new agent plugin with canonical agent plugin layout, templates, and validation checks |
 | `screaming-architecture` | skill | `skills/screaming-architecture/SKILL.md` | Invocable skill — design and review package-by-feature architecture (Screaming Architecture) |
 | `screaming-architecture` | instructions | `instructions/screaming-architecture.md` | Copilot agent instructions — enforce feature-first architecture review with weighted scorecard |
 | `spring-htmx` | skill | `skills/spring-htmx-skill.md` | Reference skill — htmx-spring-boot library (Maven, headers, fragments, Security, Thymeleaf) |
@@ -247,7 +216,7 @@ Reference skill for [deploy4j](https://deploy4j.dev/) installation and operation
 
 **Path:** `ai-toolkit/skills/ai-toolkit/SKILL.md`
 
-An invocable skill for managing toolkit-installed resources after bootstrap: inspect what bundles are present in local (`.github`) or global (`~/.copilot`) roots, update installed bundles, and reconcile local files with remote bundle content.
+An invocable skill for managing toolkit-installed resources after bootstrap: inspect what Agent Plugins are present in local (`.github`) or global (`~/.copilot`) roots, update installed Agent Plugins, and reconcile local files with remote agent plugin content.
 
 It is optional and not part of the bootstrap path. First-time installs should go through `AiToolkit.java` directly.
 

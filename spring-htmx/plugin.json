@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "spring-htmx",
-  "description": "Bundle of Spring Boot and htmx reference resources for Copilot customizations.",
+  "description": "Agent plugin for Spring Boot and htmx reference resources for Copilot customizations.",
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"

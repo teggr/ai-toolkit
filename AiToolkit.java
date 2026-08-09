@@ -28,14 +28,12 @@ import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 @Command(
     name = "ai-toolkit",
     mixinStandardHelpOptions = true,
-    subcommands = {AiToolkit.InstallCommand.class, AiToolkit.ListCommand.class, AiToolkit.PluginCommand.class, AiToolkit.UninstallCommand.class},
-    description = "Manage Copilot customization bundles from the teggr/ai-toolkit repository.")
+    subcommands = {AiToolkit.InstallCommand.class, AiToolkit.ListCommand.class, AiToolkit.UninstallCommand.class},
+    description = "Manage Copilot customization agent plugins from the teggr/ai-toolkit repository.")
 class AiToolkit implements Runnable {
 
     static final String OWNER = "teggr";
@@ -210,12 +208,12 @@ class AiToolkit implements Runnable {
     @Command(
         name = "install",
         mixinStandardHelpOptions = true,
-        description = "Install a bundle from teggr/ai-toolkit into .github, .ai, or a custom target.")
+        description = "Install an agent plugin from teggr/ai-toolkit into .github, .ai, or a custom target.")
     static class InstallCommand implements Callable<Integer> {
 
-        @Parameters(index = "0", paramLabel = "<bundle>",
-            description = "Bundle to install (e.g. discovery).")
-        String bundle;
+        @Parameters(index = "0", paramLabel = "<plugin>",
+            description = "Agent plugin to install (e.g. discovery).")
+        String plugin;
 
         @Option(names = "--target", paramLabel = "<dir>",
             description = "Target install directory (default: ./.github).")
@@ -238,7 +236,7 @@ class AiToolkit implements Runnable {
 
         @Override
         public Integer call() throws Exception {
-            String bundlePrefix = bundle + "/";
+            String bundlePrefix = plugin + "/";
             Path installRoot = resolveInstallRoot();
             Files.createDirectories(installRoot);
 
@@ -255,8 +253,8 @@ class AiToolkit implements Runnable {
                 return 1;
             }
 
-            System.out.printf("Installing bundle '%s' from %s/%s (%s) into %s%n",
-                bundle, OWNER, REPO, tree.branch(), installRoot.toAbsolutePath());
+            System.out.printf("Installing agent plugin '%s' from %s/%s (%s) into %s%n",
+                plugin, OWNER, REPO, tree.branch(), installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
 
             int installed = 0, skipped = 0, failed = 0;
@@ -369,12 +367,12 @@ class AiToolkit implements Runnable {
     @Command(
         name = "uninstall",
         mixinStandardHelpOptions = true,
-        description = "Remove a previously installed bundle from .github (or a custom target).")
+        description = "Remove a previously installed agent plugin from .github (or a custom target).")
     static class UninstallCommand implements Callable<Integer> {
 
-        @Parameters(index = "0", paramLabel = "<bundle>",
-            description = "Bundle to uninstall (e.g. discovery).")
-        String bundle;
+        @Parameters(index = "0", paramLabel = "<plugin>",
+            description = "Agent plugin to uninstall (e.g. discovery).")
+        String plugin;
 
         @Option(names = "--target", paramLabel = "<dir>",
             description = "Install directory to remove from (default: ./.github).")
@@ -392,7 +390,7 @@ class AiToolkit implements Runnable {
 
         @Override
         public Integer call() throws Exception {
-            String bundlePrefix = bundle + "/";
+            String bundlePrefix = plugin + "/";
             Path installRoot = resolveInstallRoot();
 
             if (!Files.isDirectory(installRoot)) {
@@ -409,7 +407,7 @@ class AiToolkit implements Runnable {
             }
 
             files.sort(Comparator.naturalOrder());
-            System.out.printf("Uninstalling bundle '%s' from %s%n", bundle, installRoot.toAbsolutePath());
+            System.out.printf("Uninstalling agent plugin '%s' from %s%n", plugin, installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
 
             int removed = 0, skipped = 0, missing = 0, directoriesRemoved = 0;
@@ -505,7 +503,7 @@ class AiToolkit implements Runnable {
     @Command(
         name = "list",
         mixinStandardHelpOptions = true,
-        description = "List available bundles in the teggr/ai-toolkit repository.")
+        description = "List available agent plugins in the teggr/ai-toolkit repository.")
     static class ListCommand implements Callable<Integer> {
 
         private final HttpClient client = newHttpClient();
@@ -515,13 +513,13 @@ class AiToolkit implements Runnable {
             BranchTree tree = fetchTree(client, true);
             List<String> manifests = extractPaths(tree.json(), "blob", null)
                 .stream()
-                // A valid installable bundle must have a top-level plugin.json manifest.
+                // A valid installable agent plugin must have a top-level plugin.json manifest.
                 .filter(p -> p.endsWith("/plugin.json") && p.indexOf('/') == p.lastIndexOf('/'))
                 .sorted()
                 .toList();
 
             if (manifests.isEmpty()) {
-                System.out.println("No bundles found.");
+                System.out.println("No agent plugins found.");
                 return 1;
             }
 
@@ -535,9 +533,9 @@ class AiToolkit implements Runnable {
                 descriptionWidth = 40;
             }
 
-            System.out.printf("Available bundles in %s/%s (%s):%n", OWNER, REPO, tree.branch());
+            System.out.printf("Available agent plugins in %s/%s (%s):%n", OWNER, REPO, tree.branch());
             for (String manifestPath : manifests) {
-                String bundle = manifestPath.substring(0, manifestPath.indexOf('/'));
+                String plugin = manifestPath.substring(0, manifestPath.indexOf('/'));
                 String description = "(no description)";
                 try {
                     String manifestJson = fetchText(client, rawUrl(tree.branch(), manifestPath));
@@ -546,204 +544,13 @@ class AiToolkit implements Runnable {
                         description = parsed.trim();
                     }
                 } catch (Exception ignored) {
-                    // Keep listing bundles even if one manifest cannot be read.
+                    // Keep listing agent plugins even if one manifest cannot be read.
                 }
-                printListEntry(bundle, description, nameColumnWidth, descriptionWidth);
+                printListEntry(plugin, description, nameColumnWidth, descriptionWidth);
             }
             return 0;
         }
     }
 
-    // ─── plugin ───────────────────────────────────────────────────────────────
-
-    @Command(
-        name = "plugin",
-        mixinStandardHelpOptions = true,
-        subcommands = {AiToolkit.PluginCommand.PackageCommand.class, AiToolkit.PluginCommand.ValidateCommand.class},
-        description = "Work with Agent Plugin 1.0 packages.")
-    static class PluginCommand implements Runnable {
-
-        @Override
-        public void run() {
-            CommandLine.usage(this, System.out);
-        }
-
-        static final String PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
-
-        @Command(
-            name = "package",
-            mixinStandardHelpOptions = true,
-            description = "Download a bundle and package it as an Agent Plugin 1.0 zip archive.")
-        static class PackageCommand implements Callable<Integer> {
-
-            @Parameters(index = "0", paramLabel = "<bundle>",
-                description = "Bundle to package (e.g. discovery).")
-            String bundle;
-
-            @Option(names = "--output", paramLabel = "<dir>",
-                description = "Output directory for the zip (default: ./ai-toolkit-plugins).")
-            Path outputDir;
-
-            private final HttpClient client = newHttpClient();
-
-            @Override
-            public Integer call() throws Exception {
-                Path outDir = outputDir != null
-                    ? outputDir.toAbsolutePath().normalize()
-                    : Paths.get(System.getProperty("user.dir"), "ai-toolkit-plugins");
-                Files.createDirectories(outDir);
-
-                BranchTree tree = fetchTree(client, true);
-                String bundlePrefix = bundle + "/";
-                List<String> files = extractPaths(tree.json(), "blob", bundlePrefix);
-
-                if (files.isEmpty()) {
-                    System.err.printf("No files found under %s in %s/%s.%n", bundlePrefix, OWNER, REPO);
-                    return 1;
-                }
-
-                // Verify plugin.json is present in the bundle
-                boolean hasManifest = files.stream()
-                    .anyMatch(f -> f.equals(bundlePrefix + "plugin.json"));
-                if (!hasManifest) {
-                    System.err.printf(
-                        "Warning: no plugin.json found in bundle '%s'. The package will not be a valid Agent Plugin 1.0 archive.%n",
-                        bundle);
-                }
-
-                files.sort(Comparator.naturalOrder());
-                Path zipPath = outDir.resolve(bundle + ".zip");
-                System.out.printf("Packaging bundle '%s' from %s/%s (%s) into %s%n",
-                    bundle, OWNER, REPO, tree.branch(), zipPath);
-                System.out.printf("Found %d files.%n", files.size());
-
-                // Download files into a temp directory, then zip
-                Path tempDir = Files.createTempDirectory("ai-toolkit-plugin-");
-                try {
-                    int downloaded = 0, failed = 0;
-                    for (int i = 0; i < files.size(); i++) {
-                        String remotePath = files.get(i);
-                        String relativePath = remotePath.substring(bundlePrefix.length());
-                        Path dest = tempDir.resolve(relativePath).normalize();
-                        System.out.printf("[%d/%d] %s%n", i + 1, files.size(), relativePath);
-                        try {
-                            Files.createDirectories(dest.getParent());
-                            HttpRequest req = HttpRequest.newBuilder(URI.create(rawUrl(tree.branch(), remotePath)))
-                                .timeout(Duration.ofSeconds(30))
-                                .header("User-Agent", "AiToolkit-installer")
-                                .GET()
-                                .build();
-                            HttpResponse<Path> resp = client.send(req, HttpResponse.BodyHandlers.ofFile(dest));
-                            if (resp.statusCode() != 200)
-                                throw new IOException("HTTP " + resp.statusCode());
-                            downloaded++;
-                        } catch (Exception ex) {
-                            failed++;
-                            System.err.printf("  failed: %s%n", ex.getMessage());
-                        }
-                    }
-
-                    // Zip the temp directory
-                    try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
-                        Files.walk(tempDir)
-                            .filter(p -> !Files.isDirectory(p))
-                            .sorted()
-                            .forEach(p -> {
-                                String entryName = tempDir.relativize(p).toString().replace('\\', '/');
-                                try {
-                                    zos.putNextEntry(new ZipEntry(bundle + "/" + entryName));
-                                    Files.copy(p, zos);
-                                    zos.closeEntry();
-                                } catch (IOException ex) {
-                                    System.err.printf("  zip error for %s: %s%n", entryName, ex.getMessage());
-                                }
-                            });
-                    }
-
-                    System.out.printf("%nSummary: downloaded=%d failed=%d%n", downloaded, failed);
-                    System.out.printf("Plugin archive: %s%n", zipPath.toAbsolutePath());
-                    return failed == 0 ? 0 : 1;
-                } finally {
-                    // Clean up temp directory
-                    Files.walk(tempDir)
-                        .sorted(Comparator.reverseOrder())
-                        .forEach(p -> { try { Files.delete(p); } catch (IOException ignored) {} });
-                }
-            }
-        }
-
-        @Command(
-            name = "validate",
-            mixinStandardHelpOptions = true,
-            description = "Validate a local directory as an Agent Plugin 1.0 package.")
-        static class ValidateCommand implements Callable<Integer> {
-
-            @Parameters(index = "0", paramLabel = "<path>",
-                description = "Path to the local plugin directory to validate.")
-            Path pluginPath;
-
-            @Override
-            public Integer call() throws Exception {
-                Path dir = pluginPath.toAbsolutePath().normalize();
-                System.out.printf("Validating plugin at %s%n", dir);
-
-                boolean ok = true;
-
-                // Check directory exists
-                if (!Files.isDirectory(dir)) {
-                    System.err.printf("  ERROR: %s is not a directory.%n", dir);
-                    return 1;
-                }
-
-                // Check plugin.json
-                Path manifest = dir.resolve("plugin.json");
-                if (!Files.exists(manifest)) {
-                    System.err.println("  ERROR: plugin.json not found.");
-                    ok = false;
-                } else {
-                    String content = Files.readString(manifest, StandardCharsets.UTF_8);
-                    if (!content.contains(PLUGIN_SCHEMA)) {
-                        System.err.printf("  ERROR: plugin.json $schema must be \"%s\".%n", PLUGIN_SCHEMA);
-                        ok = false;
-                    } else {
-                        System.out.println("  OK: plugin.json present with correct $schema.");
-                    }
-                    if (!content.contains("\"name\"")) {
-                        System.err.println("  ERROR: plugin.json missing required field \"name\".");
-                        ok = false;
-                    }
-                }
-
-                // Check skills/ directory
-                Path skillsDir = dir.resolve("skills");
-                if (!Files.isDirectory(skillsDir)) {
-                    System.out.println("  INFO: no skills/ directory found (plugin provides no skills).");
-                } else {
-                    long skillCount = Files.list(skillsDir)
-                        .filter(Files::isDirectory)
-                        .count();
-                    System.out.printf("  OK: skills/ directory found with %d skill(s).%n", skillCount);
-
-                    // Each skill should have a SKILL.md
-                    Files.list(skillsDir)
-                        .filter(Files::isDirectory)
-                        .forEach(skillDir -> {
-                            if (!Files.exists(skillDir.resolve("SKILL.md"))) {
-                                System.err.printf("  WARN: skill directory '%s' has no SKILL.md.%n",
-                                    skillDir.getFileName());
-                            }
-                        });
-                }
-
-                if (ok) {
-                    System.out.println("Validation passed.");
-                    return 0;
-                } else {
-                    System.err.println("Validation failed.");
-                    return 1;
-                }
-            }
-        }
-    }
 }
 

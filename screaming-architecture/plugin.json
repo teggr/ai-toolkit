@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "screaming-architecture",
-  "description": "Bundle for designing and reviewing feature-first architecture so package structure communicates business intent.",
+  "description": "Agent plugin for designing and reviewing feature-first architecture so package structure communicates business intent.",
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"

@@ -244,7 +244,7 @@
   </svg>
   <a class="header-title" href="./">ai-toolkit</a>
   <div class="header-subtitle">
-    <a href="./">Back to bundles</a>
+    <a href="./">Back to agent plugins</a>
     <span>·</span>
     <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>
   </div>
@@ -253,8 +253,8 @@
 <main>
   <section class="hero">
     <div class="eyebrow">Install Help</div>
-    <h1>Install ai-toolkit bundles</h1>
-    <p>Use the JBang-based installer to install bundles into your own environment, whether that is a local <code>.github</code> folder, a global <code>~/.copilot</code> folder, or a custom target.</p>
+    <h1>Install ai-toolkit agent plugins</h1>
+    <p>Use the JBang-based installer to install agent plugins into your own environment, whether that is a local <code>.github</code> folder, a global <code>~/.copilot</code> folder, or a custom target.</p>
   </section>
 
   <section class="grid" aria-label="Install overview">
@@ -271,7 +271,7 @@
       <h2>Three ways to use it</h2>
       <ul>
         <li>Run the installer directly from GitHub with JBang — no clone needed.</li>
-        <li>Clone with <code>git</code>, then use the embedded install instructions to choose bundles.</li>
+        <li>Clone with <code>git</code>, then use the embedded install instructions to choose agent plugins.</li>
         <li>Download raw files with <code>curl</code> if you prefer manual control over the install root.</li>
       </ul>
     </article>
@@ -282,10 +282,10 @@
       <h2>Option 1: JBang from GitHub</h2>
       <p>Run the installer directly from the GitHub-hosted <code>AiToolkit.java</code> URL. Requires Java 21+ and JBang, but no local copy of the repository.</p>
 
-      <h3>List available bundles</h3>
+      <h3>List available agent plugins</h3>
       <pre><code>jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list</code></pre>
 
-      <h3>Install a bundle into your environment</h3>
+      <h3>Install an agent plugin into your environment</h3>
       <pre><code>jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery</code></pre>
 
       <h3>Show CLI help</h3>
@@ -294,7 +294,7 @@
 
     <article class="step">
       <h2>Option 2: clone with git</h2>
-      <p>Clone the repository first, then use the embedded install guidance to choose bundles and target roots.</p>
+      <p>Clone the repository first, then use the embedded install guidance to choose agent plugins and target roots.</p>
 
       <pre><code>git clone https://github.com/teggr/ai-toolkit
 cd ai-toolkit
@@ -306,8 +306,8 @@ jbang AiToolkit.java install discovery</code></pre>
       <h2>Option 3: install as a VS Code plugin</h2>
       <p>The canonical source for this workflow is the official VS Code guide <a href="https://code.visualstudio.com/docs/agent-customization/agent-plugins#_discover-and-install-plugins" target="_blank" rel="noopener">Discover and install plugins</a>.</p>
 
-      <h3>Package a bundle locally</h3>
-      <pre><code>jbang AiToolkit.java plugin package discovery</code></pre>
+      <h3>Repository maintenance skills</h3>
+      <p>Use the <code>create-new-plugin</code> skill for internal scaffolding and structure checks when evolving agent plugin layouts.</p>
 
       <h3>Install from VS Code</h3>
       <ul>
@@ -329,8 +329,8 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
     </article>
 
     <article class="step">
-      <h2>Uninstall a bundle</h2>
-      <p>Remove a previously installed bundle. Mirrors the same options as <code>install</code>.</p>
+      <h2>Uninstall an agent plugin</h2>
+      <p>Remove a previously installed agent plugin. Mirrors the same options as <code>install</code>.</p>
 
       <h3>Remove from the current repository</h3>
       <pre><code>jbang AiToolkit.java uninstall discovery</code></pre>
@@ -346,12 +346,12 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
   <section class="card">
     <h2>What happens when you install</h2>
     <ul>
-      <li>The installer fetches bundle files from <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>.</li>
+      <li>The installer fetches agent plugin files from <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>.</li>
       <li>Existing files are left alone unless you use <code>--force</code> or choose overwrite in the prompt.</li>
-        <li>Use <code>jbang ... install &lt;bundle&gt;</code> with any bundle name shown by <code>list</code>, then target the environment you want.</li>
+        <li>Use <code>jbang ... install &lt;agent-plugin&gt;</code> with any agent plugin name shown by <code>list</code>, then target the environment you want.</li>
     </ul>
     <div class="actions">
-      <a class="button-link" href="./">Browse bundles</a>
+      <a class="button-link" href="./">Browse agent plugins</a>
       <a class="button-link" href="https://github.com/teggr/ai-toolkit/blob/main/README.md" target="_blank" rel="noopener">Read full README</a>
     </div>
   </section>
