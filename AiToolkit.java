@@ -14,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -242,7 +243,11 @@ class AiToolkit implements Runnable {
             Files.createDirectories(installRoot);
 
             BranchTree tree = fetchTree(client, true);
-            List<String> files = extractPaths(tree.json(), "blob", bundlePrefix);
+            List<String> files = extractPaths(tree.json(), "blob", bundlePrefix)
+                .stream()
+                .filter(path -> !path.equals(bundlePrefix + "plugin.json"))
+                .filter(path -> !path.equals(bundlePrefix + "README.md"))
+                .toList();
 
             if (files.isEmpty()) {
                 System.err.printf("No files found under %s in %s/%s.%n", bundlePrefix, OWNER, REPO);
@@ -407,7 +412,7 @@ class AiToolkit implements Runnable {
             System.out.printf("Uninstalling bundle '%s' from %s%n", bundle, installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
 
-            int removed = 0, skipped = 0, missing = 0;
+            int removed = 0, skipped = 0, missing = 0, directoriesRemoved = 0;
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
@@ -438,6 +443,7 @@ class AiToolkit implements Runnable {
                     try {
                         Files.delete(target);
                         removed++;
+                        directoriesRemoved += deleteEmptyParents(target.getParent(), installRoot);
                         System.out.println("  removed");
                     } catch (IOException ex) {
                         System.err.printf("  failed: %s%n", ex.getMessage());
@@ -448,7 +454,8 @@ class AiToolkit implements Runnable {
                 }
             }
 
-            System.out.printf("%nSummary: removed=%d skipped=%d not-found=%d%n", removed, skipped, missing);
+            System.out.printf("%nSummary: removed=%d skipped=%d not-found=%d directories-removed=%d%n",
+                removed, skipped, missing, directoriesRemoved);
             return 0;
         }
 
@@ -456,6 +463,40 @@ class AiToolkit implements Runnable {
             if (global) return Paths.get(System.getProperty("user.home"), ".copilot");
             if (targetDir != null) return targetDir.toAbsolutePath().normalize();
             return Paths.get(System.getProperty("user.dir"), ".github");
+        }
+
+        private int deleteEmptyParents(Path startDir, Path stopDirExclusive) {
+            if (startDir == null) return 0;
+
+            int removed = 0;
+            Path current = startDir.normalize();
+
+            while (current != null && !current.equals(stopDirExclusive)) {
+                if (!Files.isDirectory(current)) {
+                    current = current.getParent();
+                    continue;
+                }
+
+                try (var entries = Files.list(current)) {
+                    if (entries.findAny().isPresent()) {
+                        break;
+                    }
+                } catch (IOException ex) {
+                    break;
+                }
+
+                try {
+                    Files.delete(current);
+                    removed++;
+                    current = current.getParent();
+                } catch (DirectoryNotEmptyException ex) {
+                    break;
+                } catch (IOException ex) {
+                    break;
+                }
+            }
+
+            return removed;
         }
     }
 
