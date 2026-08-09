@@ -42,6 +42,7 @@ class AiToolkit implements Runnable {
     static final String ROOT_INSTRUCTIONS_FILE = "instructions.md";
     static final String ROOT_COPILOT_INSTRUCTIONS_FILE = "copilot-instructions.md";
     static final String SPECIFIC_INSTRUCTIONS_SUFFIX = ".instructions.md";
+    static final String MCP_FILE = "mcp.json";
 
     public static void main(String[] args) {
         System.exit(new CommandLine(new AiToolkit()).execute(args));
@@ -299,6 +300,132 @@ class AiToolkit implements Runnable {
         return normalized + System.lineSeparator();
     }
 
+    static boolean isMcpFile(String relativePath) {
+        return MCP_FILE.equals(relativePath);
+    }
+
+    /**
+     * Finds the index of the matching closing brace or bracket for the opening character at openPos.
+     * Returns -1 if not found.
+     */
+    static int findMatchingBrace(String json, int openPos) {
+        int depth = 0;
+        boolean inString = false;
+        for (int i = openPos; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '\\' && inString) { i++; continue; }
+            if (c == '"') { inString = !inString; continue; }
+            if (inString) continue;
+            if (c == '{' || c == '[') depth++;
+            else if (c == '}' || c == ']') {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Extracts named server entries from an mcp.json string.
+     * Returns a list of two-element arrays: [serverName, rawJsonObjectValue].
+     */
+    static List<String[]> extractMcpServerEntries(String mcpJson) {
+        List<String[]> entries = new ArrayList<>();
+        Pattern serversPattern = Pattern.compile("\"mcpServers\"\\s*:\\s*\\{");
+        Matcher sm = serversPattern.matcher(mcpJson);
+        if (!sm.find()) return entries;
+
+        int serversStart = sm.end() - 1;
+        int serversEnd = findMatchingBrace(mcpJson, serversStart);
+        if (serversEnd < 0) return entries;
+
+        String content = mcpJson.substring(serversStart + 1, serversEnd);
+        Pattern keyPattern = Pattern.compile("\\s*\"((?:\\\\.|[^\"\\\\])*)\"\\s*:");
+        int scanFrom = 0;
+        while (scanFrom < content.length()) {
+            Matcher km = keyPattern.matcher(content);
+            if (!km.find(scanFrom)) break;
+            String key = unescapeJsonString(km.group(1));
+            int valueStart = km.end();
+            while (valueStart < content.length() && Character.isWhitespace(content.charAt(valueStart))) valueStart++;
+            if (valueStart >= content.length() || content.charAt(valueStart) != '{') {
+                scanFrom = km.end();
+                continue;
+            }
+            int valueEnd = findMatchingBrace(content, valueStart);
+            if (valueEnd < 0) break;
+            entries.add(new String[]{key, content.substring(valueStart, valueEnd + 1)});
+            scanFrom = valueEnd + 1;
+        }
+        return entries;
+    }
+
+    /**
+     * Returns the server names in the given mcp.json string.
+     */
+    static List<String> extractMcpServerNames(String mcpJson) {
+        return extractMcpServerEntries(mcpJson).stream().map(e -> e[0]).toList();
+    }
+
+    /** Builds a formatted mcp.json string from a list of [name, rawJsonValue] entries. */
+    static String buildMcpJson(List<String[]> entries) {
+        String ls = System.lineSeparator();
+        if (entries.isEmpty()) {
+            return "{" + ls + "  \"mcpServers\": {}" + ls + "}" + ls;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("{").append(ls).append("  \"mcpServers\": {").append(ls);
+        for (int i = 0; i < entries.size(); i++) {
+            sb.append("    \"").append(entries.get(i)[0]).append("\": ").append(entries.get(i)[1]);
+            if (i < entries.size() - 1) sb.append(",");
+            sb.append(ls);
+        }
+        sb.append("  }").append(ls).append("}").append(ls);
+        return sb.toString();
+    }
+
+    /**
+     * Merges the given mcp server entries into the target mcp.json file,
+     * creating the file if it does not exist. Existing entries with the same
+     * name are replaced; new entries are appended.
+     */
+    static void upsertMcpServerEntries(Path targetFile, List<String[]> newEntries) throws IOException {
+        if (newEntries.isEmpty()) return;
+        List<String[]> existing = new ArrayList<>();
+        if (Files.exists(targetFile)) {
+            existing = new ArrayList<>(extractMcpServerEntries(
+                Files.readString(targetFile, StandardCharsets.UTF_8)));
+        }
+        for (String[] newEntry : newEntries) {
+            boolean replaced = false;
+            for (int i = 0; i < existing.size(); i++) {
+                if (existing.get(i)[0].equals(newEntry[0])) {
+                    existing.set(i, newEntry);
+                    replaced = true;
+                    break;
+                }
+            }
+            if (!replaced) existing.add(newEntry);
+        }
+        Files.createDirectories(targetFile.getParent());
+        Files.writeString(targetFile, buildMcpJson(existing), StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Removes the named server entries from the target mcp.json file.
+     * Returns true if any entries were removed.
+     */
+    static boolean removeMcpServerEntries(Path targetFile, List<String> keysToRemove) throws IOException {
+        if (!Files.exists(targetFile) || keysToRemove.isEmpty()) return false;
+        List<String[]> existing = new ArrayList<>(extractMcpServerEntries(
+            Files.readString(targetFile, StandardCharsets.UTF_8)));
+        int before = existing.size();
+        existing.removeIf(e -> keysToRemove.contains(e[0]));
+        if (existing.size() == before) return false;
+        Files.writeString(targetFile, buildMcpJson(existing), StandardCharsets.UTF_8);
+        return true;
+    }
+
     static String extractJsonStringField(String json, String fieldName) {
         Pattern p = Pattern.compile("\\\"" + Pattern.quote(fieldName) + "\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"\\\\])*)\\\"");
         Matcher m = p.matcher(json);
@@ -407,6 +534,7 @@ class AiToolkit implements Runnable {
 
             int installed = 0, skipped = 0, failed = 0, merged = 0;
             List<InstructionFragment> instructionFragments = new ArrayList<>();
+            List<String[]> mcpServerEntries = new ArrayList<>();
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
@@ -418,6 +546,20 @@ class AiToolkit implements Runnable {
                     try {
                         String instructionContent = fetchText(client, rawUrl(tree.branch(), remotePath));
                         instructionFragments.add(new InstructionFragment(relativePath, instructionContent));
+                        merged++;
+                        System.out.println("  queued for merge");
+                    } catch (Exception ex) {
+                        failed++;
+                        System.err.printf("  failed: %s%n", ex.getMessage());
+                    }
+                    continue;
+                }
+
+                if (isMcpFile(relativePath)) {
+                    System.out.printf("[%d/%d] %s -> queue for mcp.json merge%n", i + 1, files.size(), remotePath);
+                    try {
+                        String mcpContent = fetchText(client, rawUrl(tree.branch(), remotePath));
+                        mcpServerEntries.addAll(extractMcpServerEntries(mcpContent));
                         merged++;
                         System.out.println("  queued for merge");
                     } catch (Exception ex) {
@@ -454,6 +596,18 @@ class AiToolkit implements Runnable {
                 try {
                     String combinedInstructions = combineInstructionFragments(instructionFragments);
                     upsertPluginInstructionSection(rootInstructions, plugin, combinedInstructions);
+                    System.out.println("  merged");
+                } catch (Exception ex) {
+                    failed++;
+                    System.err.printf("  failed: %s%n", ex.getMessage());
+                }
+            }
+
+            if (!mcpServerEntries.isEmpty()) {
+                Path targetMcp = installRoot.resolve(MCP_FILE);
+                System.out.printf("[mcp] %d server(s) -> %s%n", mcpServerEntries.size(), targetMcp);
+                try {
+                    upsertMcpServerEntries(targetMcp, mcpServerEntries);
                     System.out.println("  merged");
                 } catch (Exception ex) {
                     failed++;
@@ -590,6 +744,7 @@ class AiToolkit implements Runnable {
 
             int removed = 0, skipped = 0, missing = 0, directoriesRemoved = 0, sectionsRemoved = 0;
             boolean mergedSectionHandled = false;
+            boolean mcpEntriesHandled = false;
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
@@ -614,6 +769,32 @@ class AiToolkit implements Runnable {
                             System.out.println("  section not found, skipping");
                         }
                     } catch (IOException ex) {
+                        System.err.printf("  failed: %s%n", ex.getMessage());
+                    }
+                    continue;
+                }
+
+                if (isMcpFile(relativePath)) {
+                    if (mcpEntriesHandled) {
+                        System.out.printf("[%d/%d] %s%n", i + 1, files.size(), remotePath);
+                        System.out.println("  mcp entries already removed");
+                        continue;
+                    }
+
+                    mcpEntriesHandled = true;
+                    Path targetMcp = installRoot.resolve(MCP_FILE);
+                    System.out.printf("[%d/%d] remove mcp entries from %s%n", i + 1, files.size(), targetMcp);
+                    try {
+                        String pluginMcpContent = fetchText(client, rawUrl(tree.branch(), remotePath));
+                        List<String> serverNames = extractMcpServerNames(pluginMcpContent);
+                        if (removeMcpServerEntries(targetMcp, serverNames)) {
+                            sectionsRemoved++;
+                            System.out.println("  mcp entries removed");
+                        } else {
+                            missing++;
+                            System.out.println("  mcp entries not found, skipping");
+                        }
+                    } catch (Exception ex) {
                         System.err.printf("  failed: %s%n", ex.getMessage());
                     }
                     continue;
