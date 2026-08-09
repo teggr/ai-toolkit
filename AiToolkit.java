@@ -42,7 +42,7 @@ class AiToolkit implements Runnable {
     static final String ROOT_INSTRUCTIONS_FILE = "instructions.md";
     static final String ROOT_COPILOT_INSTRUCTIONS_FILE = "copilot-instructions.md";
     static final String SPECIFIC_INSTRUCTIONS_SUFFIX = ".instructions.md";
-    static final String MCP_FILE = "mcp.json";
+    static final String MCP_FILE = ".mcp.json";
 
     public static void main(String[] args) {
         System.exit(new CommandLine(new AiToolkit()).execute(args));
@@ -302,6 +302,18 @@ class AiToolkit implements Runnable {
 
     static boolean isMcpFile(String relativePath) {
         return MCP_FILE.equals(relativePath);
+    }
+
+    /** Returns the path where MCP server entries are merged for a given install root.
+     * For .github workspace installs the file lives at the workspace root, not inside .github. */
+    static Path resolveMcpTarget(Path installRoot) {
+        Path leaf = installRoot.getFileName();
+        String leafName = leaf == null ? "" : leaf.toString();
+        if (".github".equals(leafName)) {
+            Path parent = installRoot.getParent();
+            if (parent != null) return parent.resolve(MCP_FILE);
+        }
+        return installRoot.resolve(MCP_FILE);
     }
 
     /**
@@ -604,7 +616,7 @@ class AiToolkit implements Runnable {
             }
 
             if (!mcpServerEntries.isEmpty()) {
-                Path targetMcp = installRoot.resolve(MCP_FILE);
+                Path targetMcp = resolveMcpTarget(installRoot);
                 System.out.printf("[mcp] %d server(s) -> %s%n", mcpServerEntries.size(), targetMcp);
                 try {
                     upsertMcpServerEntries(targetMcp, mcpServerEntries);
@@ -782,7 +794,7 @@ class AiToolkit implements Runnable {
                     }
 
                     mcpEntriesHandled = true;
-                    Path targetMcp = installRoot.resolve(MCP_FILE);
+                    Path targetMcp = resolveMcpTarget(installRoot);
                     System.out.printf("[%d/%d] remove mcp entries from %s%n", i + 1, files.size(), targetMcp);
                     try {
                         String pluginMcpContent = fetchText(client, rawUrl(tree.branch(), remotePath));

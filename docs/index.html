@@ -678,7 +678,7 @@
     // Purposes that have an mcp.json file — used to show the MCP badge.
     const purposesWithMcp = new Set(
       data.tree
-        .filter(n => n.type === 'blob' && /^[^/]+\/mcp\.json$/i.test(n.path))
+        .filter(n => n.type === 'blob' && /^[^/]+\/\.mcp\.json$/i.test(n.path))
         .map(n => n.path.split('/')[0])
     );
 

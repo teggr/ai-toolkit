@@ -349,7 +349,7 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
       <li>The installer fetches agent plugin files from <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>.</li>
       <li>Existing files are left alone unless you use <code>--force</code> or choose overwrite in the prompt.</li>
       <li>Use <code>jbang ... install &lt;agent-plugin&gt;</code> with any agent plugin name shown by <code>list</code>, then target the environment you want.</li>
-      <li>If a plugin includes an MCP server definition (<code>mcp.json</code>), the installer merges its <code>mcpServers</code> entries into the target <code>mcp.json</code> (e.g. <code>.github/mcp.json</code> or <code>~/.copilot/mcp.json</code>). Uninstalling removes those entries.</li>
+      <li>If a plugin includes an MCP server definition (<code>.mcp.json</code>), the installer merges its <code>mcpServers</code> entries into the target <code>.mcp.json</code> (e.g. <code>.mcp.json</code> at the workspace root or <code>~/.copilot/.mcp.json</code> globally). Uninstalling removes those entries.</li>
     </ul>
     <div class="actions">
       <a class="button-link" href="./">Browse agent plugins</a>
