@@ -124,6 +124,26 @@
       color: var(--accent);
     }
 
+    .sidebar-label {
+      padding: 10px 10px 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .sidebar-skill-item {
+      font-size: 12px;
+      padding: 7px 10px;
+    }
+
+    .sidebar-empty {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+
     /* ── Main ────────────────────────────────────────────── */
     main {
       padding: 0;
@@ -350,7 +370,14 @@
 
     .modal-title { font-weight: 600; font-size: 15px; flex: 1; }
 
-    .modal-meta { display: flex; gap: 8px; align-items: center; }
+    .modal-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .modal-type-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
 
     .modal-close {
       background: none;
@@ -557,6 +584,7 @@
       <span class="modal-title" id="modal-title"></span>
       <div class="modal-meta">
         <span class="badge" id="modal-badge"></span>
+        <span class="modal-type-badges" id="modal-type-badges"></span>
         <button class="modal-action-btn" id="modal-jbang-btn" title="Copy JBang install command">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
             <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>
@@ -607,7 +635,7 @@
 
   // ── State ────────────────────────────────────────────────
   let allItems = [];   // { name, path, purpose, type, sha }
-  let allPlugins = []; // { name, description, purpose, path, type, types, keywords, resourceCount, markdown, frontMatter }
+  let allPlugins = []; // { name, description, purpose, path, type, types, keywords, resourceCount, markdown, frontMatter, manifest }
   let topKeywords = [];
   let activeFilter = null;
   let activeSidebarItem = null;
@@ -661,6 +689,7 @@
       let markdown = '';
       let frontMatter = null;
       let manifestKeywords = [];
+      let manifestData = null;
 
       if (readme) {
         markdown = await fetchMarkdown(readme.path);
@@ -668,9 +697,9 @@
       }
 
       try {
-        const manifest = await fetchJson(`${purpose}/plugin.json`);
-        if (Array.isArray(manifest?.keywords)) {
-          manifestKeywords = manifest.keywords
+        manifestData = await fetchJson(`${purpose}/plugin.json`);
+        if (Array.isArray(manifestData?.keywords)) {
+          manifestKeywords = manifestData.keywords
             .filter(keyword => typeof keyword === 'string')
             .map(keyword => keyword.trim().toLowerCase())
             .filter(keyword => keyword.length > 0);
@@ -684,8 +713,8 @@
         .sort((a, b) => KNOWN_TYPES.indexOf(a) - KNOWN_TYPES.indexOf(b));
 
       return {
-        name: frontMatter?.data?.name || purpose,
-        description: frontMatter?.data?.description || `${resources.length} resource${resources.length === 1 ? '' : 's'}`,
+        name: manifestData?.name || frontMatter?.data?.name || purpose,
+        description: manifestData?.description || frontMatter?.data?.description || `${resources.length} resource${resources.length === 1 ? '' : 's'}`,
         purpose,
         path: readme?.path || `${purpose}/README.md`,
         type: 'plugin',
@@ -695,6 +724,7 @@
         resourceCount: resources.length,
         markdown,
         frontMatter,
+        manifest: manifestData,
       };
     }));
 
@@ -718,40 +748,44 @@
   }
 
   // ── Render sidebar ───────────────────────────────────────
-  function buildSidebar() {
+  function buildSidebar(filteredPlugins) {
     const sidebar = document.getElementById('sidebar');
+    const availableSkills = getAvailableSkills(filteredPlugins);
+
+    const skillsMarkup = availableSkills.length
+      ? availableSkills.map(skill => `
+        <button class="sidebar-nav-item sidebar-skill-item ${activeSidebarItem === skill.path ? 'active' : ''}" data-skill-path="${escapeHtml(skill.path)}" type="button" title="${escapeHtml(skill.path)}">${escapeHtml(skill.displayName)}</button>
+      `).join('')
+      : '<div class="sidebar-empty">No skills in current view</div>';
+
     sidebar.innerHTML = `
       <nav class="sidebar-nav" aria-label="Primary navigation">
         <button class="sidebar-nav-item" data-nav="install" type="button">How to install</button>
-        <button class="sidebar-nav-item" data-nav="skills" type="button">List of skills</button>
+        <div class="sidebar-label">List of skills</div>
+        ${skillsMarkup}
       </nav>
     `;
 
     const installBtn = sidebar.querySelector('[data-nav="install"]');
-    const skillsBtn = sidebar.querySelector('[data-nav="skills"]');
 
     installBtn.addEventListener('click', () => {
       window.location.href = './install.html';
     });
 
-    skillsBtn.addEventListener('click', () => {
-      activeFilter = null;
-      refreshFilters();
-      renderCards();
-      sidebar.querySelectorAll('.sidebar-nav-item').forEach(el => el.classList.remove('active'));
-      skillsBtn.classList.add('active');
+    sidebar.querySelectorAll('[data-skill-path]').forEach(button => {
+      button.addEventListener('click', () => {
+        const skill = availableSkills.find(item => item.path === button.dataset.skillPath);
+        if (!skill) return;
+        activeSidebarItem = skill.path;
+        openItem(skill);
+        buildSidebar(filteredPlugins);
+      });
     });
-
-    if (activeFilter === 'skills') {
-      skillsBtn.classList.add('active');
-    }
   }
 
   // ── Render cards ─────────────────────────────────────────
-  function renderCards() {
-    const cards = document.getElementById('cards');
+  function getFilteredPlugins() {
     let plugins = allPlugins;
-
     if (activeFilter) plugins = plugins.filter(plugin => plugin.keywords.includes(activeFilter));
     if (searchQuery) plugins = plugins.filter(plugin =>
       plugin.name.toLowerCase().includes(searchQuery) ||
@@ -760,6 +794,28 @@
       plugin.types.some(type => type.toLowerCase().includes(searchQuery)) ||
       plugin.keywords.some(keyword => keyword.includes(searchQuery))
     );
+    return plugins;
+  }
+
+  function getAvailableSkills(filteredPlugins) {
+    const purposes = new Set(filteredPlugins.map(plugin => plugin.purpose));
+    return allItems
+      .filter(item => item.type === 'skills' && purposes.has(item.purpose) && /\/SKILL\.md$/i.test(item.path))
+      .map(item => {
+        const parts = item.path.split('/');
+        const folderName = parts.length >= 4 ? parts[2] : item.name;
+        return {
+          ...item,
+          displayName: folderName,
+        };
+      })
+      .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }
+
+  function renderCards() {
+    const cards = document.getElementById('cards');
+    const plugins = getFilteredPlugins();
+    buildSidebar(plugins);
 
     if (plugins.length === 0) {
       cards.innerHTML = `<div class="state-msg"><span class="emoji">🔍</span>No agent plugins match your search.</div>`;
@@ -783,10 +839,8 @@
           <span class="card-name">${escapeHtml(plugin.name)}</span>
         </div>
         <div class="card-description">${escapeHtml(plugin.description)}</div>
-        <div class="card-path">${escapeHtml(plugin.path)}</div>
         <div class="card-footer">
           <div class="card-badges">
-            <span class="badge badge-plugin">${plugin.resourceCount} resource${plugin.resourceCount === 1 ? '' : 's'}</span>
             ${resourceBadges}
           </div>
           <button class="purpose-jbang-btn card-jbang-btn" type="button" title="${escapeHtml(jbangCommandForPlugin(plugin.purpose))}">
@@ -847,6 +901,7 @@
     const backdrop  = document.getElementById('modal-backdrop');
     const title     = document.getElementById('modal-title');
     const badge     = document.getElementById('modal-badge');
+    const typeBadges = document.getElementById('modal-type-badges');
     const link      = document.getElementById('modal-gh-link');
     const body      = document.getElementById('modal-body');
     const copyBtn   = document.getElementById('modal-copy-btn');
@@ -856,6 +911,9 @@
     title.textContent = item.name;
     badge.textContent = item.type;
     badge.className   = `badge badge-${item.type}`;
+    typeBadges.innerHTML = item.type === 'plugin'
+      ? item.types.map(type => `<span class="badge badge-${type}">${escapeHtml(type)}</span>`).join('')
+      : '';
     link.href = `https://github.com/${OWNER}/${REPO}/blob/${BRANCH}/${item.path}`;
     body.innerHTML = `<div class="state-msg"><div class="spinner"></div></div>`;
     copyBtn.disabled  = true;
@@ -878,7 +936,28 @@
       const md = item.markdown || await fetchMarkdown(item.path);
       const frontMatter = item.frontMatter || parseFrontMatter(md);
       const markdownBody = frontMatter ? frontMatter.content : md;
-      body.innerHTML = `${renderFrontMatter(frontMatter)}${marked.parse(markdownBody)}`;
+      const isPlugin = item.type === 'plugin';
+      const metadataSection = isPlugin
+        ? renderPluginManifest(item.manifest)
+        : renderFrontMatter(frontMatter);
+      body.innerHTML = isPlugin
+        ? `${metadataSection}${renderPluginInstallSection(item)}`
+        : `${metadataSection}${marked.parse(markdownBody)}`;
+
+      if (isPlugin) {
+        const installJbangBtn = document.getElementById('modal-install-jbang-btn');
+        if (installJbangBtn) {
+          installJbangBtn.onclick = async () => {
+            await navigator.clipboard.writeText(jbangCommand(item));
+            installJbangBtn.classList.add('copied');
+            installJbangBtn.textContent = 'Copied!';
+            setTimeout(() => {
+              installJbangBtn.classList.remove('copied');
+              installJbangBtn.textContent = 'Copy JBang';
+            }, 2000);
+          };
+        }
+      }
 
       const filename = item.path.split('/').pop();
 
@@ -1016,6 +1095,55 @@
     `;
   }
 
+  function renderPluginManifest(manifest) {
+    if (!manifest || typeof manifest !== 'object') return '';
+
+    const entries = Object.entries(manifest)
+      .filter(([key]) => key !== '$schema' && manifest[key] !== null && manifest[key] !== undefined);
+
+    if (entries.length === 0) return '';
+
+    const rows = entries
+      .map(([key, value]) => `
+        <div class="front-matter-key">${escapeHtml(key)}</div>
+        <div class="front-matter-value">${formatPluginManifestValue(key, value)}</div>
+      `)
+      .join('');
+
+    return `
+      <section class="front-matter">
+        <div class="front-matter-title">Plugin Information</div>
+        <div class="front-matter-grid">${rows}</div>
+      </section>
+    `;
+  }
+
+  function renderPluginInstallSection(item) {
+    const command = jbangCommand(item);
+    return `
+      <section>
+        <h2>How to install</h2>
+        <p>See the full installation guide at <a href="./install.html" target="_blank" rel="noopener">Install documentation</a>.</p>
+        <p>Install this plugin with JBang:</p>
+        <pre><code>${escapeHtml(command)}</code></pre>
+        <button class="modal-action-btn" id="modal-install-jbang-btn" type="button">Copy JBang</button>
+      </section>
+    `;
+  }
+
+  function formatPluginManifestValue(key, value) {
+    if (Array.isArray(value)) {
+      return value.map(v => escapeHtml(String(v))).join(', ');
+    }
+
+    const asString = String(value);
+    if ((key === 'homepage' || key === 'repository') && /^https?:\/\//i.test(asString)) {
+      return `<a href="${escapeHtml(asString)}" target="_blank" rel="noopener">${escapeHtml(asString)}</a>`;
+    }
+
+    return escapeHtml(asString);
+  }
+
   // ── Boot ─────────────────────────────────────────────────
   (async () => {
     try {
@@ -1023,9 +1151,8 @@
       const count = items.length;
 
       document.getElementById('subtitle').innerHTML =
-        `${plugins.length} agent plugin${plugins.length !== 1 ? 's' : ''} · ${count} resource${count !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
+        `${plugins.length} agent plugin${plugins.length !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
 
-      buildSidebar();
       buildFilters();
       renderCards();
     } catch (err) {
