@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "spring-j2html",
+  "description": "Bundle of j2html-extensions resources for Copilot customizations, covering Spring Boot integration, Bootstrap, HTMX, and template engine usage.",
+  "version": "1.0.0",
+  "homepage": "https://teggr.github.io/ai-toolkit/",
+  "repository": "https://github.com/teggr/ai-toolkit"
+}
