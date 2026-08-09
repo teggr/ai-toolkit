@@ -149,7 +149,7 @@ class AiToolkit implements Runnable {
     @Command(
         name = "install",
         mixinStandardHelpOptions = true,
-        description = "Install a bundle from teggr/ai-toolkit into .github (or a custom target).")
+        description = "Install a bundle from teggr/ai-toolkit into .github, .ai, or a custom target.")
     static class InstallCommand implements Callable<Integer> {
 
         @Parameters(index = "0", paramLabel = "<bundle>",
@@ -163,6 +163,10 @@ class AiToolkit implements Runnable {
         @Option(names = "--global",
             description = "Install into ~/.copilot (overrides --target).")
         boolean global;
+
+        @Option(names = "--ai",
+            description = "Install into ./.ai — the shared source-of-truth directory that tools like Cursor and Claude Code can symlink into (overrides --target).")
+        boolean ai;
 
         @Option(names = "--force",
             description = "Overwrite existing files without prompting.")
@@ -222,6 +226,7 @@ class AiToolkit implements Runnable {
 
         private Path resolveInstallRoot() {
             if (global) return Paths.get(System.getProperty("user.home"), ".copilot");
+            if (ai) return Paths.get(System.getProperty("user.dir"), ".ai");
             if (targetDir != null) return targetDir.toAbsolutePath().normalize();
             return Paths.get(System.getProperty("user.dir"), ".github");
         }
