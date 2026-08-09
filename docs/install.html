@@ -303,7 +303,22 @@ jbang AiToolkit.java install discovery</code></pre>
     </article>
 
     <article class="step">
-      <h2>Option 3: raw files via curl</h2>
+      <h2>Option 3: install as a VS Code plugin</h2>
+      <p>The canonical source for this workflow is the official VS Code guide <a href="https://code.visualstudio.com/docs/agent-customization/agent-plugins#_discover-and-install-plugins" target="_blank" rel="noopener">Discover and install plugins</a>.</p>
+
+      <h3>Package a bundle locally</h3>
+      <pre><code>jbang AiToolkit.java plugin package discovery</code></pre>
+
+      <h3>Install from VS Code</h3>
+      <ul>
+        <li>Open the Extensions view and search for <code>@agentPlugins</code>, or open Agent Customizations.</li>
+        <li>Install from a marketplace, from source, or register a local plugin directory with <code>chat.pluginLocations</code>.</li>
+        <li>Enable the plugin in the Agent Plugins - Installed view once it appears.</li>
+      </ul>
+    </article>
+
+    <article class="step">
+      <h2>Option 4: raw files via curl</h2>
       <p>Download the raw files you need and place them into your preferred install root.</p>
 
       <h3>Download the skill files</h3>

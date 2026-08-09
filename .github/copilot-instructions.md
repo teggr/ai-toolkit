@@ -19,6 +19,8 @@ Prompt files (`*.prompt.md`) are legacy and should not be added for new work. Us
 - Each bundle `README.md` must include YAML frontmatter with `name` and `description`.
 - The body of each bundle `README.md` should describe what the bundle includes.
 - When adding or updating a bundle, always add or update its `README.md` so the bundle metadata stays complete.
+- When changing install or setup instructions, keep the guidance synchronized in both the threadme install documentation and the website install docs in [docs/install.html](docs/install.html), so users see the same steps everywhere.
+- New or updated bundles must follow the canonical Agent Plugins layout from the VS Code documentation: a root `plugin.json` manifest with the Agent Plugins schema, skills under `skills/`, and any additional portable components in the locations the canonical spec expects. Do not introduce non-standard plugin layouts for new bundles.
 
 ## Installing bundles (for AI agents)
 

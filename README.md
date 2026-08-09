@@ -148,9 +148,38 @@ Every bundle in this repository is also a valid [Agent Plugin 1.0](https://agent
 
 Skills are auto-discovered from the `skills/` folder — no explicit listing in the manifest is needed. The `skills/<skill-name>/SKILL.md` layout already matches the Agent Plugin spec.
 
-To install a bundle as a VS Code plugin, use `plugin package` to download and zip it, then install the zip via VS Code's plugin marketplace UI, or point VS Code at the unpacked directory.
+### Install in VS Code
 
-See the [VS Code agent plugins documentation](https://code.visualstudio.com/docs/agent-customization/agent-plugins) and the [Agent Plugins open standard](https://agent-plugins.org/) for details.
+The canonical source for this workflow is the official VS Code guide: [Discover and install plugins](https://code.visualstudio.com/docs/agent-customization/agent-plugins#_discover-and-install-plugins).
+
+To install one of these bundles in VS Code:
+
+1. Package a bundle locally, for example:
+
+   ```bash
+   jbang AiToolkit.java plugin package discovery
+   ```
+
+2. In VS Code, open the Extensions view and search for `@agentPlugins`, or open Agent Customizations and choose the Agent Plugins experience.
+
+3. Install the plugin using one of the supported flows from the VS Code documentation:
+   - install from a marketplace,
+   - install from source via the Command Palette or Agent Customizations UI, or
+   - register a local plugin directory with `chat.pluginLocations` in your VS Code settings.
+
+4. After installation, enable the plugin from the Agent Plugins - Installed view.
+
+For local development, a plugin directory can be registered directly in settings like this:
+
+```json
+{
+  "chat.pluginLocations": {
+    "C:/path/to/ai-toolkit/discovery": true
+  }
+}
+```
+
+See also the [Agent Plugins open standard](https://agent-plugins.org/) for the portable plugin format details.
 
 ## Packaging
 
