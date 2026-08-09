@@ -92,57 +92,37 @@
       overflow-y: auto;
     }
 
-    .sidebar-section { margin-bottom: 8px; }
-
-    .sidebar-purpose {
-      padding: 6px 16px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--muted);
-      cursor: pointer;
-      user-select: none;
+    .sidebar-nav {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0 10px;
     }
 
-    .sidebar-purpose:hover { color: var(--text); }
-
-    .sidebar-purpose .chevron {
-      transition: transform 0.2s;
-      font-style: normal;
-    }
-
-    .sidebar-purpose.collapsed .chevron { transform: rotate(-90deg); }
-
-    .sidebar-type-group { padding-left: 12px; }
-
-    .sidebar-type-label {
-      padding: 4px 16px;
-      font-size: 11px;
+    .sidebar-nav-item {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
       color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 4px;
-    }
-
-    .sidebar-item {
-      padding: 5px 16px 5px 28px;
-      cursor: pointer;
-      border-radius: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--muted);
+      padding: 8px 10px;
+      text-align: left;
       font-size: 13px;
-      transition: background 0.1s, color 0.1s;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
     }
 
-    .sidebar-item:hover { background: var(--surface); color: var(--text); }
-    .sidebar-item.active { background: var(--surface); color: var(--accent); }
+    .sidebar-nav-item:hover {
+      border-color: var(--border);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .sidebar-nav-item.active {
+      border-color: var(--accent);
+      background: var(--surface);
+      color: var(--accent);
+    }
 
     /* ── Main ────────────────────────────────────────────── */
     main {
@@ -627,7 +607,8 @@
 
   // ── State ────────────────────────────────────────────────
   let allItems = [];   // { name, path, purpose, type, sha }
-  let allPlugins = []; // { name, description, purpose, path, type, types, resourceCount, markdown, frontMatter }
+  let allPlugins = []; // { name, description, purpose, path, type, types, keywords, resourceCount, markdown, frontMatter }
+  let topKeywords = [];
   let activeFilter = null;
   let activeSidebarItem = null;
   let searchQuery = '';
@@ -638,6 +619,13 @@
     const res = await fetch(url);
     if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
     const data = await res.json();
+
+    // Match CLI behavior: only top-level folders with plugin.json are installable plugins.
+    const installablePurposes = new Set(
+      data.tree
+        .filter(n => n.type === 'blob' && /^[^/]+\/plugin\.json$/i.test(n.path))
+        .map(n => n.path.split('/')[0])
+    );
 
     const markdownFiles = data.tree
       .filter(n => n.type === 'blob' && n.path.endsWith('.md'));
@@ -654,29 +642,41 @@
           type: parts[1],
           sha: n.sha,
         };
-      });
+      })
+      .filter(item => installablePurposes.has(item.purpose));
 
     const pluginReadmes = markdownFiles
       .filter(n => /^[^/]+\/README\.md$/i.test(n.path))
       .map(n => {
         const [purpose] = n.path.split('/');
         return { purpose, path: n.path, sha: n.sha };
-      });
+      })
+      .filter(plugin => installablePurposes.has(plugin.purpose));
 
     const pluginReadmeByPurpose = new Map(pluginReadmes.map(plugin => [plugin.purpose, plugin]));
-    const pluginPurposes = [...new Set([
-      ...items.map(item => item.purpose),
-      ...pluginReadmes.map(plugin => plugin.purpose),
-    ])].sort();
+    const pluginPurposes = [...installablePurposes].sort();
 
     const plugins = await Promise.all(pluginPurposes.map(async purpose => {
       const readme = pluginReadmeByPurpose.get(purpose);
       let markdown = '';
       let frontMatter = null;
+      let manifestKeywords = [];
 
       if (readme) {
         markdown = await fetchMarkdown(readme.path);
         frontMatter = parseFrontMatter(markdown);
+      }
+
+      try {
+        const manifest = await fetchJson(`${purpose}/plugin.json`);
+        if (Array.isArray(manifest?.keywords)) {
+          manifestKeywords = manifest.keywords
+            .filter(keyword => typeof keyword === 'string')
+            .map(keyword => keyword.trim().toLowerCase())
+            .filter(keyword => keyword.length > 0);
+        }
+      } catch {
+        // Keep rendering plugin cards even if one manifest cannot be parsed.
       }
 
       const resources = items.filter(item => item.purpose === purpose);
@@ -691,11 +691,26 @@
         type: 'plugin',
         sha: readme?.sha || null,
         types,
+        keywords: [...new Set(manifestKeywords)],
         resourceCount: resources.length,
         markdown,
         frontMatter,
       };
     }));
+
+    const keywordCounts = new Map();
+    for (const plugin of plugins) {
+      for (const keyword of plugin.keywords) {
+        keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
+      }
+    }
+    topKeywords = [...keywordCounts.entries()]
+      .sort((a, b) => {
+        if (b[1] !== a[1]) return b[1] - a[1];
+        return a[0].localeCompare(b[0]);
+      })
+      .slice(0, 3)
+      .map(([keyword]) => keyword);
 
     allItems = items;
     allPlugins = plugins;
@@ -703,52 +718,32 @@
   }
 
   // ── Render sidebar ───────────────────────────────────────
-  function buildSidebar(items) {
-    const byPurpose = groupBy(items, 'purpose');
+  function buildSidebar() {
     const sidebar = document.getElementById('sidebar');
-    sidebar.innerHTML = '';
+    sidebar.innerHTML = `
+      <nav class="sidebar-nav" aria-label="Primary navigation">
+        <button class="sidebar-nav-item" data-nav="install" type="button">How to install</button>
+        <button class="sidebar-nav-item" data-nav="skills" type="button">List of skills</button>
+      </nav>
+    `;
 
-    for (const [purpose, purposeItems] of Object.entries(byPurpose)) {
-      const byType = groupBy(purposeItems, 'type');
+    const installBtn = sidebar.querySelector('[data-nav="install"]');
+    const skillsBtn = sidebar.querySelector('[data-nav="skills"]');
 
-      const section = document.createElement('div');
-      section.className = 'sidebar-section';
+    installBtn.addEventListener('click', () => {
+      window.location.href = './install.html';
+    });
 
-      const heading = document.createElement('div');
-      heading.className = 'sidebar-purpose';
-      const plugin = allPlugins.find(item => item.purpose === purpose);
-      heading.innerHTML = `<i class="chevron">▾</i> ${escapeHtml(plugin?.name || purpose)}`;
-      heading.addEventListener('click', () => {
-        heading.classList.toggle('collapsed');
-        typeGroupWrap.style.display = heading.classList.contains('collapsed') ? 'none' : '';
-      });
-      section.appendChild(heading);
+    skillsBtn.addEventListener('click', () => {
+      activeFilter = null;
+      refreshFilters();
+      renderCards();
+      sidebar.querySelectorAll('.sidebar-nav-item').forEach(el => el.classList.remove('active'));
+      skillsBtn.classList.add('active');
+    });
 
-      const typeGroupWrap = document.createElement('div');
-
-      for (const [type, typeItems] of Object.entries(byType)) {
-        const typeGroup = document.createElement('div');
-        typeGroup.className = 'sidebar-type-group';
-
-        const typeLabel = document.createElement('div');
-        typeLabel.className = 'sidebar-type-label';
-        typeLabel.textContent = `${TYPE_ICONS[type] || '📄'} ${type}`;
-        typeGroup.appendChild(typeLabel);
-
-        for (const item of typeItems) {
-          const el = document.createElement('div');
-          el.className = 'sidebar-item';
-          el.textContent = item.name;
-          el.title = item.path;
-          el.addEventListener('click', () => openItem(item));
-          typeGroup.appendChild(el);
-        }
-
-        typeGroupWrap.appendChild(typeGroup);
-      }
-
-      section.appendChild(typeGroupWrap);
-      sidebar.appendChild(section);
+    if (activeFilter === 'skills') {
+      skillsBtn.classList.add('active');
     }
   }
 
@@ -757,12 +752,13 @@
     const cards = document.getElementById('cards');
     let plugins = allPlugins;
 
-    if (activeFilter) plugins = plugins.filter(plugin => plugin.types.includes(activeFilter));
+    if (activeFilter) plugins = plugins.filter(plugin => plugin.keywords.includes(activeFilter));
     if (searchQuery) plugins = plugins.filter(plugin =>
       plugin.name.toLowerCase().includes(searchQuery) ||
       plugin.description.toLowerCase().includes(searchQuery) ||
       plugin.purpose.toLowerCase().includes(searchQuery) ||
-      plugin.types.some(type => type.toLowerCase().includes(searchQuery))
+      plugin.types.some(type => type.toLowerCase().includes(searchQuery)) ||
+      plugin.keywords.some(keyword => keyword.includes(searchQuery))
     );
 
     if (plugins.length === 0) {
@@ -820,8 +816,7 @@
   }
 
   // ── Render type filter pills ─────────────────────────────
-  function buildFilters(items) {
-    const types = [...new Set(items.map(i => i.type))].sort();
+  function buildFilters() {
     const wrap = document.getElementById('type-filters');
     wrap.innerHTML = '';
 
@@ -831,12 +826,12 @@
     allBtn.addEventListener('click', () => { activeFilter = null; refreshFilters(); renderCards(); });
     wrap.appendChild(allBtn);
 
-    for (const type of types) {
+    for (const keyword of topKeywords) {
       const btn = document.createElement('button');
-      btn.className = `filter-btn ${activeFilter === type ? 'active' : ''}`;
-      btn.textContent = `${TYPE_ICONS[type] || ''} ${type}`;
-      btn.dataset.type = type;
-      btn.addEventListener('click', () => { activeFilter = type; refreshFilters(); renderCards(); });
+      btn.className = `filter-btn ${activeFilter === keyword ? 'active' : ''}`;
+      btn.textContent = `#${keyword}`;
+      btn.dataset.type = keyword;
+      btn.addEventListener('click', () => { activeFilter = keyword; refreshFilters(); renderCards(); });
       wrap.appendChild(btn);
     }
   }
@@ -947,6 +942,11 @@
     return res.text();
   }
 
+  async function fetchJson(path) {
+    const raw = await fetchMarkdown(path);
+    return JSON.parse(raw);
+  }
+
   function groupBy(arr, key) {
     return arr.reduce((acc, item) => {
       (acc[item[key]] = acc[item[key]] || []).push(item);
@@ -1025,8 +1025,8 @@
       document.getElementById('subtitle').innerHTML =
         `${plugins.length} agent plugin${plugins.length !== 1 ? 's' : ''} · ${count} resource${count !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
 
-      buildSidebar(items);
-      buildFilters(items);
+      buildSidebar();
+      buildFilters();
       renderCards();
     } catch (err) {
       document.getElementById('cards').innerHTML =

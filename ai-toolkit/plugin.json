@@ -2,6 +2,14 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ai-toolkit",
   "description": "Optional post-install Agent plugin manager for Copilot customizations from teggr/ai-toolkit, focused on inventory, updates, and reconciliation.",
+  "keywords": [
+    "installer",
+    "inventory",
+    "reconciliation",
+    "plugin-management",
+    "bootstrap",
+    "catalog"
+  ],
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"

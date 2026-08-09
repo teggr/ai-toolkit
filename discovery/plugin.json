@@ -2,6 +2,14 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "discovery",
   "description": "Agent plugin for discovery and investigation work before planning or implementation.",
+  "keywords": [
+    "discovery",
+    "analysis",
+    "investigation",
+    "planning",
+    "reconnaissance",
+    "research"
+  ],
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"

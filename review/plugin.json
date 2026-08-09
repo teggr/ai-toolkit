@@ -2,6 +2,14 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "review",
   "description": "Agent plugin for reviewing agent-generated pull requests using a structured, ordered checklist based on GitHub's guide to agent PR review.",
+  "keywords": [
+    "code-review",
+    "pull-request",
+    "checklist",
+    "quality",
+    "governance",
+    "review"
+  ],
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"

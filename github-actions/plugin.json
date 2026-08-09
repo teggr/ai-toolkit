@@ -2,6 +2,14 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "github-actions",
   "description": "Agent plugin for skills for working with GitHub Actions workflows, including setting up and maintaining common actions.",
+  "keywords": [
+    "github-actions",
+    "workflow",
+    "ci",
+    "java",
+    "automation",
+    "pipelines"
+  ],
   "version": "1.0.0",
   "homepage": "https://teggr.github.io/ai-toolkit/",
   "repository": "https://github.com/teggr/ai-toolkit"
