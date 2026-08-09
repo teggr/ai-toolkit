@@ -1,5 +1,5 @@
 ---
-name: setup-java
+name: github-actions-setup-java
 description: Reference skill for installing and configuring Java in GitHub Actions workflows using actions/setup-java, including distribution selection, caching, Maven/Gradle publishing, and multi-JDK setups.
 user-invocable: false
 ---

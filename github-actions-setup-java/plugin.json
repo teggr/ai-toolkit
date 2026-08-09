@@ -1,9 +1,9 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "github-actions",
+  "name": "github-actions-setup-java",
   "description": "Agent plugin for skills for working with GitHub Actions workflows, including setting up and maintaining common actions.",
   "keywords": [
-    "github-actions",
+    "github-actions-setup-java",
     "workflow",
     "ci",
     "java",

@@ -1,8 +1,9 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "copilot-java",
+  "name": "github-copilot-coding-agent",
   "description": "Agent plugin for configuring the GitHub Copilot coding agent to use Java 25 (or any JDK version) via a copilot-setup-steps.yml workflow, covering Maven, Gradle, private repositories, and firewall allowlist configuration.",
   "keywords": [
+    "github-copilot-coding-agent",
     "java",
     "jdk",
     "maven",

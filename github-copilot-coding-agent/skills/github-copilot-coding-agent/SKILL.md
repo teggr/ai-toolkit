@@ -1,11 +1,11 @@
 ---
-name: copilot-java
+name: github-copilot-coding-agent
 description: Create or update .github/workflows/copilot-setup-steps.yml so the GitHub Copilot coding agent builds with the correct JDK version (including Java 25), with support for Maven, Gradle, private repositories, and firewall allowlist configuration.
 user-invocable: true
 argument-hint: Describe your goal (e.g. "set up Java 25 for Copilot", "update my copilot workflow to use JDK 25 with Gradle", "add private repo auth to my copilot setup")
 ---
 
-You are the **copilot-java** skill. Your job is to create or update `.github/workflows/copilot-setup-steps.yml` so the GitHub Copilot coding agent uses the correct JDK version for this repository.
+You are the **github-copilot-coding-agent** skill. Your job is to create or update `.github/workflows/copilot-setup-steps.yml` so the GitHub Copilot coding agent uses the correct JDK version for this repository.
 
 Use [docs/docs.md](docs/docs.md) as your reference for all workflow templates, configuration options, and validation steps.
 
