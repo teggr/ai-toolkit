@@ -2,7 +2,7 @@
 
 > Source: https://github.blog/ai-and-ml/generative-ai/agent-pull-requests-are-everywhere-heres-how-to-review-them/
 
-This document is the full reference for the `agent-pr-review` skill. It covers the ordered six-step review process, the five red-flag categories, and the escalation criteria for requesting a smaller pull request.
+This document is the full reference for the `github-pr-review` skill. It covers the ordered six-step review process, the five red-flag categories, and the escalation criteria for requesting a smaller pull request.
 
 ---
 
@@ -123,7 +123,7 @@ Request a breakdown before writing a single review comment if:
 
 ## Using with GitHub Copilot code review
 
-See `../../instructions/agent-pr-review.md` for ready-to-use custom instructions you can configure for GitHub Copilot code review. These automate the mechanical checks (CI weakening, duplicate utilities, missing tests) on every PR before a human reviewer sees it.
+See `../../instructions/github-pr-review.md` for ready-to-use custom instructions you can configure for GitHub Copilot code review. These automate the mechanical checks (CI weakening, duplicate utilities, missing tests) on every PR before a human reviewer sees it.
 
 Add to your repository's Copilot code review custom instructions via:
 - **GitHub:** Repository Settings → Copilot → Code review → Custom instructions

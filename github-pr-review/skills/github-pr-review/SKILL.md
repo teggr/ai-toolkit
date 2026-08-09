@@ -1,5 +1,5 @@
 ---
-name: agent-pr-review
+name: github-pr-review
 description: Structured review skill for agent-generated pull requests. Guides through the six ordered review steps from GitHub's agent PR review guide — CI integrity, code reuse, critical-path tracing, security boundaries, and evidence — then produces a structured review report.
 user-invocable: true
 argument-hint: Provide the pull request number, branch, or describe what to review (e.g. "review this PR", "review current branch changes")

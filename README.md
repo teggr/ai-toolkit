@@ -114,7 +114,7 @@ Every agent plugin in this repository is also a valid [Agent Plugin 1.0](https:/
 ```json
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "review",
+  "name": "github-pr-review",
   "description": "...",
   "version": "1.0.0"
 }
@@ -171,8 +171,8 @@ Resources are organized by **purpose** and then by **type** (`agents/`, `skills/
 | Agent plugin | Type | Resource | Description |
 |---|---|---|---|
 | `discovery` | agent | `agents/discovery.md` | Discovery agent — clarifies goals, scope, dependencies, risks, and unknowns before planning |
-| `review` | skill | `skills/agent-pr-review/SKILL.md` | Invocable skill — six-step structured review for agent-generated PRs (CI, reuse, security, evidence) |
-| `review` | instructions | `instructions/agent-pr-review.md` | Copilot code review instructions — drop-in mechanical checks for every PR |
+| `github-pr-review` | skill | `skills/github-pr-review/SKILL.md` | Invocable skill — six-step structured review for agent-generated PRs (CI, reuse, security, evidence) |
+| `github-pr-review` | instructions | `instructions/github-pr-review.md` | Copilot code review instructions — drop-in mechanical checks for every PR |
 | `deploy4j` | skill | `skills/deploy4j/SKILL.md` | Reference skill — deploy4j CLI install, init, config/secrets, setup, and deploy workflows |
 | `ai-toolkit` | skill | `skills/ai-toolkit/SKILL.md` | Optional manager skill — inspect, update, and reconcile toolkit-managed resources after bootstrap |
 | `create-new-plugin` | skill | `skills/create-new-plugin/SKILL.md` | Invocable skill — scaffold a new agent plugin with canonical agent plugin layout, templates, and validation checks |
@@ -189,15 +189,13 @@ Resources are organized by **purpose** and then by **type** (`agents/`, `skills/
 
 Reference skill for using the [htmx-spring-boot](https://github.com/wimdeblauwe/htmx-spring-boot) library. Covers Maven configuration, request/response headers, HTML fragments, Spring Security integration, and the Thymeleaf dialect. Not invocable — use as context when working with Spring Boot + htmx projects.
 
-## Review
+#### github-pr-review
 
-#### agent-pr-review
-
-**Path:** `review/skills/agent-pr-review/SKILL.md`
+**Path:** `github-pr-review/skills/github-pr-review/SKILL.md`
 
 An invocable VS Code skill for reviewing agent-generated pull requests. Guides through the six ordered steps from [GitHub's agent PR review guide](https://github.blog/ai-and-ml/generative-ai/agent-pull-requests-are-everywhere-heres-how-to-review-them/): CI integrity, code reuse, critical-path tracing, security boundaries, and evidence. Produces a structured review report with BLOCKER / WARN / PASS findings.
 
-**Path:** `review/instructions/agent-pr-review.md`
+**Path:** `github-pr-review/instructions/github-pr-review.md`
 
 Copilot code review custom instructions that automate the mechanical checks on every pull request. Drop into `.github/copilot-instructions.md` or add via GitHub Repository Settings → Copilot → Code review → Custom instructions.
 

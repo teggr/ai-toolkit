@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "review",
+  "name": "github-pr-review",
   "description": "Agent plugin for reviewing agent-generated pull requests using a structured, ordered checklist based on GitHub's guide to agent PR review.",
   "keywords": [
     "code-review",
