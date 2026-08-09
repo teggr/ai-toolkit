@@ -179,7 +179,7 @@ Resources are organized by **purpose** and then by **type** (`agents/`, `skills/
 | `screaming-architecture` | skill | `skills/screaming-architecture/SKILL.md` | Invocable skill — design and review package-by-feature architecture (Screaming Architecture) |
 | `screaming-architecture` | instructions | `instructions/screaming-architecture.md` | Copilot agent instructions — enforce feature-first architecture review with weighted scorecard |
 | `spring-htmx` | skill | `skills/spring-htmx-skill.md` | Reference skill — htmx-spring-boot library (Maven, headers, fragments, Security, Thymeleaf) |
-| `spring-j2html` | skill | `skills/spring-j2html-skill.md` | Reference skill — j2html type-safe HTML builder with Spring Boot |
+| `j2html-toolkit` | skill | `skills/j2html-toolkit/SKILL.md` | Reference skill — j2html-toolkit type-safe HTML builder with Spring Boot |
 
 ### Detail
 
@@ -232,13 +232,13 @@ An invocable skill for designing, creating, and reviewing architecture with pack
 
 Copilot agent instructions that reference the `screaming-architecture` skill and enforce feature-first architecture review outputs, including the weighted scorecard.
 
-## Spring j2html
+## j2html Toolkit
 
-#### spring-j2html
+#### j2html-toolkit
 
-**Path:** `spring-j2html/skills/j2html-extensions/SKILL.md`
+**Path:** `j2html-toolkit/skills/j2html-toolkit/SKILL.md`
 
-Reference skill for working with the [j2html-extensions](https://github.com/teggr/j2html-extensions) library in Spring Boot applications. Covers Maven setup, the Spring Boot starter, core extensions, Bootstrap classes, HTMX attributes, and the j2html template engine. Not invocable — use as context when building type-safe HTML views with Spring Boot.
+Reference skill for working with the [j2html-toolkit](https://github.com/teggr/j2html-toolkit) library in Spring Boot applications. Covers Maven setup, the Spring Boot starter, core extensions, Bootstrap classes, HTMX attributes, and the j2html template engine. Not invocable — use as context when building type-safe HTML views with Spring Boot.
 
 ## References
 
