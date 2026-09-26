@@ -1073,7 +1073,7 @@
 
   async function fetchRecommendedMarkdown(resource) {
     const url = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? resource.path
+      ? new URL(resource.path, window.location.href).toString()
       : `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${resource.repoPath || resource.path}`;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch ${resource.path}: ${res.status}`);

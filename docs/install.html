@@ -323,14 +323,31 @@ jbang AiToolkit.java install show-me</code></pre>
     <article class="step">
       <h2>Option 4: recommended external skills</h2>
       <p>ai-toolkit can also install curated third-party skills by copying their upstream files from GitHub into the same install roots used for bundled resources.</p>
-
-      <h3>grill-me from mattpocock/skills</h3>
-      <pre><code>jbang AiToolkit.java install grill-me</code></pre>
-      <p class="note">Source-native install: <code>npx skills@latest add mattpocock/skills</code> and select <code>grill-me</code>.</p>
-
-      <h3>show-me from humanlayer/skills</h3>
-      <pre><code>jbang AiToolkit.java install show-me</code></pre>
-      <p class="note">Source-native install: <code>npx skills add humanlayer/skills --skill show-me</code>.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Resource</th>
+            <th>Canonical reference</th>
+            <th>Source-native install</th>
+            <th>ai-toolkit install</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>grill-me</code></td>
+            <td><a href="https://github.com/mattpocock/skills/blob/main/docs/productivity/grill-me.md" target="_blank" rel="noopener">mattpocock/skills</a></td>
+            <td><code>npx skills@latest add mattpocock/skills</code> then select <code>grill-me</code></td>
+            <td><code>jbang AiToolkit.java install grill-me</code></td>
+          </tr>
+          <tr>
+            <td><code>show-me</code></td>
+            <td><a href="https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md" target="_blank" rel="noopener">humanlayer/skills</a></td>
+            <td><code>npx skills add humanlayer/skills --skill show-me</code></td>
+            <td><code>jbang AiToolkit.java install show-me</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">Use the source-native install when you want the upstream project's default workflow, or use ai-toolkit when you want these curated skills copied into the same local or global install roots as the bundled resources.</div>
     </article>
 
     <article class="step">
