@@ -253,8 +253,8 @@
 <main>
   <section class="hero">
     <div class="eyebrow">Install Help</div>
-    <h1>Install ai-toolkit agent plugins</h1>
-    <p>Use the JBang-based installer to install agent plugins into your own environment, whether that is a local <code>.github</code> folder, a global <code>~/.copilot</code> folder, or a custom target.</p>
+    <h1>Install ai-toolkit resources</h1>
+    <p>Use the JBang-based installer to install bundled agent plugins and recommended external skills into your own environment, whether that is a local <code>.github</code> folder, a global <code>~/.copilot</code> folder, or a custom target.</p>
   </section>
 
   <section class="grid" aria-label="Install overview">
@@ -268,10 +268,10 @@
     </article>
 
     <article class="card">
-      <h2>Three ways to use it</h2>
+      <h2>Common ways to use it</h2>
       <ul>
         <li>Run the installer directly from GitHub with JBang — no clone needed.</li>
-        <li>Clone with <code>git</code>, then use the embedded install instructions to choose agent plugins.</li>
+        <li>Clone with <code>git</code>, then use the embedded install instructions to choose bundled plugins or recommended external skills.</li>
         <li>Download raw files with <code>curl</code> if you prefer manual control over the install root.</li>
         <li>See <a href="https://github.com/teggr/rebelstack-template" target="_blank" rel="noopener">rebelstack-template</a> for a reference usage of these skills when templating new projects with built-in skills.</li>
       </ul>
@@ -283,11 +283,12 @@
       <h2>Option 1: JBang from GitHub</h2>
       <p>Run the installer directly from the GitHub-hosted <code>AiToolkit.java</code> URL. Requires Java 21+ and JBang, but no local copy of the repository.</p>
 
-      <h3>List available agent plugins</h3>
+      <h3>List available installable resources</h3>
       <pre><code>jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list</code></pre>
 
-      <h3>Install an agent plugin into your environment</h3>
-      <pre><code>jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery</code></pre>
+      <h3>Install a bundled plugin or recommended skill</h3>
+      <pre><code>jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install grill-me</code></pre>
 
       <h3>Show CLI help</h3>
       <pre><code>jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java --help</code></pre>
@@ -295,12 +296,13 @@
 
     <article class="step">
       <h2>Option 2: clone with git</h2>
-      <p>Clone the repository first, then use the embedded install guidance to choose agent plugins and target roots.</p>
+      <p>Clone the repository first, then use the embedded install guidance to choose bundled plugins or recommended skills and target roots.</p>
 
       <pre><code>git clone https://github.com/teggr/ai-toolkit
 cd ai-toolkit
 jbang AiToolkit.java list
-jbang AiToolkit.java install discovery</code></pre>
+jbang AiToolkit.java install discovery
+jbang AiToolkit.java install show-me</code></pre>
     </article>
 
     <article class="step">
@@ -319,7 +321,20 @@ jbang AiToolkit.java install discovery</code></pre>
     </article>
 
     <article class="step">
-      <h2>Option 4: raw files via curl</h2>
+      <h2>Option 4: recommended external skills</h2>
+      <p>ai-toolkit can also install curated third-party skills by copying their upstream files from GitHub into the same install roots used for bundled resources.</p>
+
+      <h3>grill-me from mattpocock/skills</h3>
+      <pre><code>jbang AiToolkit.java install grill-me</code></pre>
+      <p class="note">Source-native install: <code>npx skills@latest add mattpocock/skills</code> and select <code>grill-me</code>.</p>
+
+      <h3>show-me from humanlayer/skills</h3>
+      <pre><code>jbang AiToolkit.java install show-me</code></pre>
+      <p class="note">Source-native install: <code>npx skills add humanlayer/skills --skill show-me</code>.</p>
+    </article>
+
+    <article class="step">
+      <h2>Option 5: raw files via curl</h2>
       <p>Download the raw files you need and place them into your preferred install root.</p>
 
       <h3>Download the skill files</h3>
@@ -330,8 +345,8 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
     </article>
 
     <article class="step">
-      <h2>Uninstall an agent plugin</h2>
-      <p>Remove a previously installed agent plugin. Mirrors the same options as <code>install</code>.</p>
+      <h2>Uninstall a resource</h2>
+      <p>Remove a previously installed bundled plugin or recommended skill. Mirrors the same options as <code>install</code>.</p>
 
       <h3>Remove from the current repository</h3>
       <pre><code>jbang AiToolkit.java uninstall discovery</code></pre>
@@ -347,9 +362,9 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
   <section class="card">
     <h2>What happens when you install</h2>
     <ul>
-      <li>The installer fetches agent plugin files from <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a>.</li>
+      <li>The installer fetches bundled files from <a href="https://github.com/teggr/ai-toolkit" target="_blank" rel="noopener">teggr/ai-toolkit</a> and can also fetch curated recommended skills directly from their upstream GitHub repositories.</li>
       <li>Existing files are left alone unless you use <code>--force</code> or choose overwrite in the prompt.</li>
-      <li>Use <code>jbang ... install &lt;agent-plugin&gt;</code> with any agent plugin name shown by <code>list</code>, then target the environment you want.</li>
+      <li>Use <code>jbang ... install &lt;resource&gt;</code> with any bundled plugin or recommended skill shown by <code>list</code>, then target the environment you want.</li>
       <li>If a plugin includes an MCP server definition (<code>.mcp.json</code>), the installer merges its <code>mcpServers</code> entries into the target <code>.mcp.json</code> (e.g. <code>.mcp.json</code> at the workspace root or <code>~/.copilot/.mcp.json</code> globally). Uninstalling removes those entries.</li>
     </ul>
     <div class="actions">

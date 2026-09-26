@@ -15,11 +15,12 @@ Run the installer directly from the GitHub-hosted `AiToolkit.java` URL with JBan
 ```bash
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install grill-me
 ```
 
 ### Option B — clone with git
 
-Clone the repository, then use the embedded install guidance to pick and install Agent Plugins into your own environment.
+Clone the repository, then use the embedded install guidance to pick and install bundled agent plugins or recommended external skills into your own environment.
 
 ```bash
 git clone https://github.com/teggr/ai-toolkit
@@ -41,16 +42,16 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
 
 ## AiToolkit Operations (End Users)
 
-### `list` — Show available agent plugins
+### `list` — Show available installable resources
 
 ```bash
 jbang AiToolkit.java list
 ```
 
-### `install <agent-plugin>` — Install an agent plugin
+### `install <resource>` — Install a bundled plugin or recommended skill
 
 ```bash
-jbang AiToolkit.java install [--target <dir> | --global] [--force] <agent-plugin>
+jbang AiToolkit.java install [--target <dir> | --global] [--force] <resource>
 ```
 
 Options:
@@ -63,15 +64,16 @@ Examples:
 
 ```bash
 jbang AiToolkit.java install discovery
+jbang AiToolkit.java install grill-me
 jbang AiToolkit.java install --target /tmp/copilot-resources discovery
-jbang AiToolkit.java install --global --force discovery
+jbang AiToolkit.java install --global --force show-me
 ```
 
-### `uninstall <agent-plugin>` — Remove an agent plugin
+### `uninstall <resource>` — Remove a bundled plugin or recommended skill
 
 
 ```bash
-jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <agent-plugin>
+jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <resource>
 ```
 
 Options:
@@ -94,6 +96,7 @@ You can run the script without cloning the repository by passing the GitHub-host
 ```bash
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery
+jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install grill-me
 ```
 
 For help:
@@ -155,7 +158,7 @@ Each agent plugin is dual-purpose:
 
 | Usage | How |
 |---|---|
-| JBang toolkit install | `jbang AiToolkit.java install <agent-plugin>` copies files into `.github` or `~/.copilot` or `.ai` |
+| JBang toolkit install | `jbang AiToolkit.java install <resource>` copies files into `.github` or `~/.copilot` or `.ai` |
 | Agent Plugin 1.0 directory | Install directly from an agent plugin directory (for example `./discovery`) in VS Code |
 
 ## Starter structure
@@ -237,6 +240,15 @@ Copilot agent instructions that reference the `screaming-architecture` skill and
 **Path:** `j2html-toolkit/skills/j2html-toolkit/SKILL.md`
 
 Reference skill for working with the [j2html-toolkit](https://github.com/teggr/j2html-toolkit) library in Spring Boot applications. Covers Maven setup, the Spring Boot starter, core extensions, Bootstrap classes, HTMX attributes, and the j2html template engine. Not invocable — use as context when building type-safe HTML views with Spring Boot.
+
+## Recommended external skills
+
+These resources are maintained outside this repository, but ai-toolkit can surface and install them into the same local or global roots as the bundled resources.
+
+| Resource | Type | Canonical reference | Source-native install | ai-toolkit install |
+|---|---|---|---|---|
+| `grill-me` | recommended skill | <https://github.com/mattpocock/skills/blob/main/docs/productivity/grill-me.md> | `npx skills@latest add mattpocock/skills` (then select `grill-me`) | `jbang AiToolkit.java install grill-me` |
+| `show-me` | recommended skill | <https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md> | `npx skills add humanlayer/skills --skill show-me` | `jbang AiToolkit.java install show-me` |
 
 ## References
 
