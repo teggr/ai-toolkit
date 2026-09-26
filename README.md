@@ -243,12 +243,7 @@ Reference skill for working with the [j2html-toolkit](https://github.com/teggr/j
 
 ## Recommended external skills
 
-These resources are maintained outside this repository, but ai-toolkit can surface and install them into the same local or global roots as the bundled resources.
-
-| Resource | Type | Canonical reference | Source-native install | ai-toolkit install |
-|---|---|---|---|---|
-| `grill-me` | recommended skill | <https://github.com/mattpocock/skills/blob/main/docs/productivity/grill-me.md> | `npx skills@latest add mattpocock/skills` (then select `grill-me`) | `jbang AiToolkit.java install grill-me` |
-| `show-me` | recommended skill | <https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md> | `npx skills add humanlayer/skills --skill show-me` | `jbang AiToolkit.java install show-me` |
+ai-toolkit also curates recommended external skills such as `grill-me` and `show-me`. For the canonical references and the synchronized source-native versus ai-toolkit install commands, see the install guide at <https://teggr.github.io/ai-toolkit/install.html>.
 
 ## References
 

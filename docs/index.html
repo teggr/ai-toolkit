@@ -969,7 +969,6 @@
 
     try {
       const isPlugin = item.type === 'plugin';
-      const isRecommendedCard = item.type === 'recommended';
       let rawContent = '';
       let contentType = 'text/markdown';
 
@@ -981,14 +980,14 @@
         const frontMatter = item.frontMatter || parseFrontMatter(rawContent);
         const markdownBody = item.markdownBody || (frontMatter ? frontMatter.content : rawContent);
         const metadataSection = renderFrontMatter(frontMatter);
-        body.innerHTML = `${isRecommendedCard ? renderRecommendedInstallSection(item) : ''}${metadataSection}${marked.parse(markdownBody)}`;
+        body.innerHTML = `${metadataSection}${marked.parse(markdownBody)}`;
       }
 
       if (isPlugin) {
         contentType = 'application/json';
       }
 
-      if (isPlugin || isRecommendedCard) {
+      if (isPlugin) {
         const installJbangBtn = document.getElementById('modal-install-jbang-btn');
         if (installJbangBtn) {
           installJbangBtn.onclick = async () => {
@@ -1072,10 +1071,7 @@
   }
 
   async function fetchRecommendedMarkdown(resource) {
-    const url = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? new URL(resource.path, window.location.href).toString()
-      : `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${resource.repoPath || resource.path}`;
-    const res = await fetch(url);
+    const res = await fetch(new URL(resource.path, window.location.href).toString());
     if (!res.ok) throw new Error(`Failed to fetch ${resource.path}: ${res.status}`);
     return res.text();
   }
@@ -1173,20 +1169,6 @@
       <section class="front-matter">
         <div class="front-matter-title">Plugin Information</div>
         <div class="front-matter-grid">${rows}</div>
-      </section>
-    `;
-  }
-
-  function renderRecommendedInstallSection(item) {
-    const command = jbangCommand(item);
-    const canonicalUrl = item.frontMatter?.data?.canonical_url;
-    return `
-      <section>
-        <h2>Install with ai-toolkit</h2>
-        <p>Install this recommended resource with the toolkit installer:</p>
-        <pre><code>${escapeHtml(command)}</code></pre>
-        <button class="modal-action-btn" id="modal-install-jbang-btn" type="button">Copy JBang</button>
-        ${canonicalUrl ? `<p>Canonical reference: <a href="${escapeHtml(canonicalUrl)}" target="_blank" rel="noopener">${escapeHtml(canonicalUrl)}</a></p>` : ''}
       </section>
     `;
   }
