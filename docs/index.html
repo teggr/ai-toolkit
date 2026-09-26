@@ -1070,8 +1070,16 @@
     return res.text();
   }
 
+  function docsRelativeUrl(path) {
+    const pathname = window.location.pathname;
+    const basePath = pathname.endsWith('/')
+      ? pathname
+      : pathname.replace(/[^/]*$/, '');
+    return new URL(path, `${window.location.origin}${basePath}`).toString();
+  }
+
   async function fetchRecommendedMarkdown(resource) {
-    const res = await fetch(new URL(resource.path, window.location.href).toString());
+    const res = await fetch(docsRelativeUrl(resource.path));
     if (!res.ok) throw new Error(`Failed to fetch ${resource.path}: ${res.status}`);
     return res.text();
   }

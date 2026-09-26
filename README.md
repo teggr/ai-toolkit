@@ -15,7 +15,6 @@ Run the installer directly from the GitHub-hosted `AiToolkit.java` URL with JBan
 ```bash
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery
-jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install grill-me
 ```
 
 ### Option B — clone with git
@@ -64,10 +63,11 @@ Examples:
 
 ```bash
 jbang AiToolkit.java install discovery
-jbang AiToolkit.java install grill-me
 jbang AiToolkit.java install --target /tmp/copilot-resources discovery
-jbang AiToolkit.java install --global --force show-me
+jbang AiToolkit.java install --global --force discovery
 ```
+
+See the install guide for recommended external skills such as `grill-me` and `show-me`: <https://teggr.github.io/ai-toolkit/install.html>.
 
 ### `uninstall <resource>` — Remove a bundled plugin or recommended skill
 
@@ -96,7 +96,6 @@ You can run the script without cloning the repository by passing the GitHub-host
 ```bash
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java list
 jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install discovery
-jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install grill-me
 ```
 
 For help:
