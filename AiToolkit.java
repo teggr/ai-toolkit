@@ -645,7 +645,7 @@ class AiToolkit implements Runnable {
         description = "Install an agent plugin or recommended external skill into .github, .ai, or a custom target.")
     static class InstallCommand implements Callable<Integer> {
 
-        @Parameters(index = "0", paramLabel = "<plugin>",
+        @Parameters(index = "0", paramLabel = "<resource>",
             description = "Agent plugin or recommended skill to install (e.g. discovery, grill-me).")
         String plugin;
 
@@ -869,7 +869,7 @@ class AiToolkit implements Runnable {
         description = "Remove a previously installed agent plugin or recommended external skill from .github (or a custom target).")
     static class UninstallCommand implements Callable<Integer> {
 
-        @Parameters(index = "0", paramLabel = "<plugin>",
+        @Parameters(index = "0", paramLabel = "<resource>",
             description = "Agent plugin or recommended skill to uninstall (e.g. discovery, grill-me).")
         String plugin;
 

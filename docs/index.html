@@ -1079,7 +1079,7 @@
   }
 
   async function fetchRecommendedMarkdown(resource) {
-    const res = await fetch(docsRelativeUrl(resource.path));
+    const res = await fetch(docsRelativeUrl(resource.sitePath || resource.path));
     if (!res.ok) throw new Error(`Failed to fetch ${resource.path}: ${res.status}`);
     return res.text();
   }
