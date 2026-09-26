@@ -734,7 +734,7 @@
     const resources = Array.isArray(data.resources) ? data.resources : [];
 
     const recommendedResources = await Promise.all(resources.map(async resource => {
-      const rawContent = await fetchMarkdown(resource.path);
+      const rawContent = await fetchRecommendedMarkdown(resource);
       const frontMatter = parseFrontMatter(rawContent);
       const metadata = frontMatter?.data || {};
       const keywords = (metadata.keywords || '')
@@ -1068,6 +1068,15 @@
   async function fetchMarkdown(path) {
     const res = await fetch(repoContentUrl(path));
     if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+    return res.text();
+  }
+
+  async function fetchRecommendedMarkdown(resource) {
+    const url = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? resource.path
+      : `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${resource.repoPath || resource.path}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${resource.path}: ${res.status}`);
     return res.text();
   }
 

@@ -566,6 +566,21 @@ class AiToolkit implements Runnable {
         return resources;
     }
 
+    static boolean isToolkitResource(ResourceSpec resource, BranchTree toolkitTree) {
+        return OWNER.equals(resource.owner())
+            && REPO.equals(resource.repo())
+            && toolkitTree.branch().equals(resource.branch());
+    }
+
+    static List<String> listResourceFiles(ResourceSpec resource, BranchTree sourceTree) {
+        String sourcePrefix = ensureTrailingSlash(resource.sourcePath());
+        return extractPaths(sourceTree.json(), "blob", sourcePrefix)
+            .stream()
+            .filter(path -> resource.recommended() || (!path.equals(sourcePrefix + "plugin.json") && !path.equals(sourcePrefix + "README.md")))
+            .sorted()
+            .toList();
+    }
+
     static List<String> wrapText(String text, int width) {
         List<String> lines = new ArrayList<>();
         String normalized = text == null ? "" : text.trim().replaceAll("\\s+", " ");
@@ -769,21 +784,6 @@ class AiToolkit implements Runnable {
 
             System.out.printf("%nSummary: installed=%d merged=%d skipped=%d failed=%d%n", installed, merged, skipped, failed);
             return failed == 0 ? 0 : 1;
-        }
-
-        private List<String> listResourceFiles(ResourceSpec resource, BranchTree sourceTree) {
-            String sourcePrefix = ensureTrailingSlash(resource.sourcePath());
-            return extractPaths(sourceTree.json(), "blob", sourcePrefix)
-                .stream()
-                .filter(path -> resource.recommended() || (!path.equals(sourcePrefix + "plugin.json") && !path.equals(sourcePrefix + "README.md")))
-                .sorted()
-                .toList();
-        }
-
-        private boolean isToolkitResource(ResourceSpec resource, BranchTree toolkitTree) {
-            return OWNER.equals(resource.owner())
-                && REPO.equals(resource.repo())
-                && toolkitTree.branch().equals(resource.branch());
         }
 
         private Path resolveInstallRoot() {
@@ -1021,21 +1021,6 @@ class AiToolkit implements Runnable {
             System.out.printf("%nSummary: removed=%d sections-removed=%d skipped=%d not-found=%d directories-removed=%d%n",
                 removed, sectionsRemoved, skipped, missing, directoriesRemoved);
             return 0;
-        }
-
-        private List<String> listResourceFiles(ResourceSpec resource, BranchTree sourceTree) {
-            String sourcePrefix = ensureTrailingSlash(resource.sourcePath());
-            return extractPaths(sourceTree.json(), "blob", sourcePrefix)
-                .stream()
-                .filter(path -> resource.recommended() || (!path.equals(sourcePrefix + "plugin.json") && !path.equals(sourcePrefix + "README.md")))
-                .sorted()
-                .toList();
-        }
-
-        private boolean isToolkitResource(ResourceSpec resource, BranchTree toolkitTree) {
-            return OWNER.equals(resource.owner())
-                && REPO.equals(resource.repo())
-                && toolkitTree.branch().equals(resource.branch());
         }
 
         private Path resolveInstallRoot() {
