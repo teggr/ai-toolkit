@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -194,17 +195,17 @@ class AiToolkit implements Runnable {
         return isMarkdownFile(relativePath);
     }
 
-    static Path mapDestination(Path installRoot, String relativePath) {
-        if (!isSpecificInstructionsFile(relativePath)) {
-            return installRoot.resolve(relativePath).normalize();
+    static Path mapDestination(Path installRoot, String relativePath) throws IOException {
+        String safePath = validateRelativePath(relativePath, "resource file path");
+        Path root = installRoot.toAbsolutePath().normalize();
+        Path destination = isSpecificInstructionsFile(safePath)
+            ? root.resolve("instructions").resolve(Paths.get(safePath).getFileName())
+            : root.resolve(safePath);
+        destination = destination.normalize();
+        if (!destination.startsWith(root) || destination.equals(root)) {
+            throw new IOException("Resource destination is outside install root: " + relativePath);
         }
-
-        Path fileNamePath = Paths.get(relativePath).getFileName();
-        if (fileNamePath == null) {
-            return installRoot.resolve(relativePath).normalize();
-        }
-
-        return installRoot.resolve("instructions").resolve(fileNamePath.toString()).normalize();
+        return destination;
     }
 
     static Path rootInstructionsTarget(Path installRoot) {
@@ -468,6 +469,26 @@ class AiToolkit implements Runnable {
         return normalized;
     }
 
+    static String validateRelativePath(String path, String fieldName) throws IOException {
+        if (path == null || path.isBlank()) {
+            throw new IOException("Missing " + fieldName + ".");
+        }
+        String normalized = path.trim().replace('\\', '/');
+        if (normalized.startsWith("/") || normalized.matches("(?i)^[a-z]:.*")
+                || !normalized.matches("[^/]+(?:/[^/]+)*")
+                || List.of(normalized.split("/")).stream().anyMatch(part -> part.equals(".") || part.equals(".."))) {
+            throw new IOException("Invalid relative " + fieldName + ": " + path);
+        }
+        try {
+            if (Paths.get(normalized).isAbsolute()) {
+                throw new IOException("Invalid relative " + fieldName + ": " + path);
+            }
+        } catch (InvalidPathException ex) {
+            throw new IOException("Invalid relative " + fieldName + ": " + path, ex);
+        }
+        return normalized;
+    }
+
     static String ensureTrailingSlash(String path) {
         String normalized = normalizeRelativePath(path);
         if (normalized.isEmpty()) return "";
@@ -491,12 +512,14 @@ class AiToolkit implements Runnable {
     static ResourceSpec parseRecommendedResourceSpec(String resourceId, String detailPath, String markdown) throws IOException {
         String sourceOwner = extractFrontMatterField(markdown, "source_owner");
         String sourceRepo = extractFrontMatterField(markdown, "source_repo");
-        String sourcePath = normalizeRelativePath(extractFrontMatterField(markdown, "source_path"));
-        String installPath = normalizeRelativePath(extractFrontMatterField(markdown, "install_path"));
+        String sourcePath = extractFrontMatterField(markdown, "source_path");
+        String installPath = extractFrontMatterField(markdown, "install_path");
         if (sourceOwner == null || sourceOwner.isBlank() || sourceRepo == null || sourceRepo.isBlank()
-                || sourcePath.isBlank() || installPath.isBlank()) {
+                || sourcePath == null || sourcePath.isBlank() || installPath == null || installPath.isBlank()) {
             throw new IOException("Recommended resource '" + resourceId + "' is missing required source metadata.");
         }
+        sourcePath = validateRelativePath(sourcePath, "source_path");
+        installPath = validateRelativePath(installPath, "install_path");
 
         String displayName = extractFrontMatterField(markdown, "name");
         String description = extractFrontMatterField(markdown, "description");
