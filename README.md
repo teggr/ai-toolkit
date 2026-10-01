@@ -19,7 +19,7 @@ jbang https://github.com/teggr/ai-toolkit/blob/main/AiToolkit.java install disco
 
 ### Option B — clone with git
 
-Clone the repository, then use the embedded install guidance to pick and install Agent Plugins into your own environment.
+Clone the repository, then use the embedded install guidance to pick and install bundled agent plugins or recommended external skills into your own environment.
 
 ```bash
 git clone https://github.com/teggr/ai-toolkit
@@ -41,16 +41,16 @@ curl -L -O https://raw.githubusercontent.com/teggr/ai-toolkit/main/ai-toolkit/sk
 
 ## AiToolkit Operations (End Users)
 
-### `list` — Show available agent plugins
+### `list` — Show available installable resources
 
 ```bash
 jbang AiToolkit.java list
 ```
 
-### `install <agent-plugin>` — Install an agent plugin
+### `install <resource>` — Install a bundled plugin or recommended skill
 
 ```bash
-jbang AiToolkit.java install [--target <dir> | --global] [--force] <agent-plugin>
+jbang AiToolkit.java install [--target <dir> | --global] [--force] <resource>
 ```
 
 Options:
@@ -67,11 +67,13 @@ jbang AiToolkit.java install --target /tmp/copilot-resources discovery
 jbang AiToolkit.java install --global --force discovery
 ```
 
-### `uninstall <agent-plugin>` — Remove an agent plugin
+See the install guide for recommended external skills such as `grill-me` and `show-me`: <https://teggr.github.io/ai-toolkit/install.html>.
+
+### `uninstall <resource>` — Remove a bundled plugin or recommended skill
 
 
 ```bash
-jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <agent-plugin>
+jbang AiToolkit.java uninstall [--target <dir> | --global] [--force] <resource>
 ```
 
 Options:
@@ -155,7 +157,7 @@ Each agent plugin is dual-purpose:
 
 | Usage | How |
 |---|---|
-| JBang toolkit install | `jbang AiToolkit.java install <agent-plugin>` copies files into `.github` or `~/.copilot` or `.ai` |
+| JBang toolkit install | `jbang AiToolkit.java install <resource>` copies files into `.github` or `~/.copilot` or `.ai` |
 | Agent Plugin 1.0 directory | Install directly from an agent plugin directory (for example `./discovery`) in VS Code |
 
 ## Starter structure
@@ -237,6 +239,10 @@ Copilot agent instructions that reference the `screaming-architecture` skill and
 **Path:** `j2html-toolkit/skills/j2html-toolkit/SKILL.md`
 
 Reference skill for working with the [j2html-toolkit](https://github.com/teggr/j2html-toolkit) library in Spring Boot applications. Covers Maven setup, the Spring Boot starter, core extensions, Bootstrap classes, HTMX attributes, and the j2html template engine. Not invocable — use as context when building type-safe HTML views with Spring Boot.
+
+## Recommended external skills
+
+ai-toolkit also curates recommended external skills such as `grill-me` and `show-me`. For the canonical references and the synchronized source-native versus ai-toolkit install commands, see the install guide at <https://teggr.github.io/ai-toolkit/install.html>.
 
 ## References
 

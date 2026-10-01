@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -43,6 +44,7 @@ class AiToolkit implements Runnable {
     static final String ROOT_COPILOT_INSTRUCTIONS_FILE = "copilot-instructions.md";
     static final String SPECIFIC_INSTRUCTIONS_SUFFIX = ".instructions.md";
     static final String MCP_FILE = ".mcp.json";
+    static final String RECOMMENDED_SKILLS_PREFIX = "recommended/skills/";
 
     public static void main(String[] args) {
         System.exit(new CommandLine(new AiToolkit()).execute(args));
@@ -63,8 +65,13 @@ class AiToolkit implements Runnable {
     }
 
     static BranchTree fetchTree(HttpClient client, boolean recursive) throws IOException, InterruptedException {
+        return fetchTree(client, OWNER, REPO, recursive);
+    }
+
+    static BranchTree fetchTree(HttpClient client, String owner, String repo, boolean recursive)
+            throws IOException, InterruptedException {
         for (String branch : List.of("main", "master")) {
-            BranchTree tree = fetchTree(client, branch, recursive);
+            BranchTree tree = fetchTree(client, owner, repo, branch, recursive);
             if (tree != null) return tree;
         }
         throw new IOException("Unable to resolve repository tree for branches main/master.");
@@ -72,9 +79,14 @@ class AiToolkit implements Runnable {
 
     static BranchTree fetchTree(HttpClient client, String branch, boolean recursive)
             throws IOException, InterruptedException {
+        return fetchTree(client, OWNER, REPO, branch, recursive);
+    }
+
+    static BranchTree fetchTree(HttpClient client, String owner, String repo, String branch, boolean recursive)
+            throws IOException, InterruptedException {
         String url = String.format(Locale.ROOT,
             "https://api.github.com/repos/%s/%s/git/trees/%s%s",
-            OWNER, REPO, branch, recursive ? "?recursive=1" : "");
+            owner, repo, branch, recursive ? "?recursive=1" : "");
         HttpRequest request = HttpRequest.newBuilder(URI.create(url))
             .timeout(Duration.ofSeconds(30))
             .header("Accept", "application/vnd.github+json")
@@ -139,8 +151,12 @@ class AiToolkit implements Runnable {
     }
 
     static String rawUrl(String branch, String path) {
+        return rawUrl(OWNER, REPO, branch, path);
+    }
+
+    static String rawUrl(String owner, String repo, String branch, String path) {
         return String.format(Locale.ROOT,
-            "https://raw.githubusercontent.com/%s/%s/%s/%s", OWNER, REPO, branch, path);
+            "https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, branch, path);
     }
 
     static String fetchText(HttpClient client, String url) throws IOException, InterruptedException {
@@ -179,17 +195,17 @@ class AiToolkit implements Runnable {
         return isMarkdownFile(relativePath);
     }
 
-    static Path mapDestination(Path installRoot, String relativePath) {
-        if (!isSpecificInstructionsFile(relativePath)) {
-            return installRoot.resolve(relativePath).normalize();
+    static Path mapDestination(Path installRoot, String relativePath) throws IOException {
+        String safePath = validateRelativePath(relativePath, "resource file path");
+        Path root = installRoot.toAbsolutePath().normalize();
+        Path destination = isSpecificInstructionsFile(safePath)
+            ? root.resolve("instructions").resolve(Paths.get(safePath).getFileName())
+            : root.resolve(safePath);
+        destination = destination.normalize();
+        if (!destination.startsWith(root) || destination.equals(root)) {
+            throw new IOException("Resource destination is outside install root: " + relativePath);
         }
-
-        Path fileNamePath = Paths.get(relativePath).getFileName();
-        if (fileNamePath == null) {
-            return installRoot.resolve(relativePath).normalize();
-        }
-
-        return installRoot.resolve("instructions").resolve(fileNamePath.toString()).normalize();
+        return destination;
     }
 
     static Path rootInstructionsTarget(Path installRoot) {
@@ -445,6 +461,149 @@ class AiToolkit implements Runnable {
         return unescapeJsonString(m.group(1));
     }
 
+    static String normalizeRelativePath(String path) {
+        if (path == null) return "";
+        String normalized = path.trim().replace('\\', '/');
+        while (normalized.startsWith("/")) normalized = normalized.substring(1);
+        while (normalized.endsWith("/")) normalized = normalized.substring(0, normalized.length() - 1);
+        return normalized;
+    }
+
+    static String validateRelativePath(String path, String fieldName) throws IOException {
+        if (path == null || path.isBlank()) {
+            throw new IOException("Missing " + fieldName + ".");
+        }
+        String normalized = path.trim().replace('\\', '/');
+        if (normalized.startsWith("/") || normalized.matches("(?i)^[a-z]:.*")
+                || !normalized.matches("[^/]+(?:/[^/]+)*")
+                || List.of(normalized.split("/")).stream().anyMatch(part -> part.equals(".") || part.equals(".."))) {
+            throw new IOException("Invalid relative " + fieldName + ": " + path);
+        }
+        try {
+            if (Paths.get(normalized).isAbsolute()) {
+                throw new IOException("Invalid relative " + fieldName + ": " + path);
+            }
+        } catch (InvalidPathException ex) {
+            throw new IOException("Invalid relative " + fieldName + ": " + path, ex);
+        }
+        return normalized;
+    }
+
+    static String ensureTrailingSlash(String path) {
+        String normalized = normalizeRelativePath(path);
+        if (normalized.isEmpty()) return "";
+        return normalized + "/";
+    }
+
+    static String extractFrontMatterBlock(String markdown) {
+        Matcher matcher = Pattern.compile("^---\\s*\\R([\\s\\S]*?)\\R---\\s*(?:\\R|$)").matcher(markdown);
+        if (!matcher.find()) return null;
+        return matcher.group(1);
+    }
+
+    static String extractFrontMatterField(String markdown, String fieldName) {
+        String frontMatter = extractFrontMatterBlock(markdown);
+        if (frontMatter == null) return null;
+        Matcher matcher = Pattern.compile("(?m)^" + Pattern.quote(fieldName) + "\\s*:\\s*(.+?)\\s*$").matcher(frontMatter);
+        if (!matcher.find()) return null;
+        return matcher.group(1).trim();
+    }
+
+    static ResourceSpec parseRecommendedResourceSpec(String resourceId, String detailPath, String markdown) throws IOException {
+        String sourceOwner = extractFrontMatterField(markdown, "source_owner");
+        String sourceRepo = extractFrontMatterField(markdown, "source_repo");
+        String sourcePath = extractFrontMatterField(markdown, "source_path");
+        String installPath = extractFrontMatterField(markdown, "install_path");
+        if (sourceOwner == null || sourceOwner.isBlank() || sourceRepo == null || sourceRepo.isBlank()
+                || sourcePath == null || sourcePath.isBlank() || installPath == null || installPath.isBlank()) {
+            throw new IOException("Recommended resource '" + resourceId + "' is missing required source metadata.");
+        }
+        sourcePath = validateRelativePath(sourcePath, "source_path");
+        installPath = validateRelativePath(installPath, "install_path");
+
+        String displayName = extractFrontMatterField(markdown, "name");
+        String description = extractFrontMatterField(markdown, "description");
+        String sourceBranch = extractFrontMatterField(markdown, "source_branch");
+        return new ResourceSpec(
+            resourceId,
+            displayName == null || displayName.isBlank() ? resourceId : displayName.trim(),
+            description == null || description.isBlank() ? "(no description)" : description.trim(),
+            sourceOwner.trim(),
+            sourceRepo.trim(),
+            sourceBranch == null || sourceBranch.isBlank() ? "main" : sourceBranch.trim(),
+            sourcePath,
+            installPath,
+            true,
+            detailPath);
+    }
+
+    static ResourceSpec resolveResourceSpec(HttpClient client, String resourceId, BranchTree toolkitTree)
+            throws IOException, InterruptedException {
+        String normalizedId = resourceId == null ? "" : resourceId.trim();
+        if (normalizedId.isEmpty()) return null;
+
+        String bundlePrefix = normalizedId + "/";
+        boolean hasManifest = extractPaths(toolkitTree.json(), "blob", bundlePrefix)
+            .stream()
+            .anyMatch(path -> path.equals(bundlePrefix + "plugin.json"));
+        if (hasManifest) {
+            return new ResourceSpec(
+                normalizedId,
+                normalizedId,
+                "(no description)",
+                OWNER,
+                REPO,
+                toolkitTree.branch(),
+                normalizedId,
+                "",
+                false,
+                null);
+        }
+
+        String detailPath = RECOMMENDED_SKILLS_PREFIX + normalizedId + ".md";
+        boolean hasRecommendedEntry = extractPaths(toolkitTree.json(), "blob", RECOMMENDED_SKILLS_PREFIX)
+            .stream()
+            .anyMatch(path -> path.equals(detailPath));
+        if (!hasRecommendedEntry) {
+            return null;
+        }
+
+        String markdown = fetchText(client, rawUrl(toolkitTree.branch(), detailPath));
+        return parseRecommendedResourceSpec(normalizedId, detailPath, markdown);
+    }
+
+    static List<ResourceSpec> loadRecommendedResourceSpecs(HttpClient client, BranchTree toolkitTree)
+            throws IOException, InterruptedException {
+        List<String> detailPaths = extractPaths(toolkitTree.json(), "blob", RECOMMENDED_SKILLS_PREFIX)
+            .stream()
+            .filter(path -> path.endsWith(".md"))
+            .sorted()
+            .toList();
+        List<ResourceSpec> resources = new ArrayList<>();
+        for (String detailPath : detailPaths) {
+            String fileName = detailPath.substring(detailPath.lastIndexOf('/') + 1);
+            String resourceId = fileName.substring(0, fileName.length() - 3);
+            String markdown = fetchText(client, rawUrl(toolkitTree.branch(), detailPath));
+            resources.add(parseRecommendedResourceSpec(resourceId, detailPath, markdown));
+        }
+        return resources;
+    }
+
+    static boolean isToolkitResource(ResourceSpec resource, BranchTree toolkitTree) {
+        return OWNER.equals(resource.owner())
+            && REPO.equals(resource.repo())
+            && toolkitTree.branch().equals(resource.branch());
+    }
+
+    static List<String> listResourceFiles(ResourceSpec resource, BranchTree sourceTree) {
+        String sourcePrefix = ensureTrailingSlash(resource.sourcePath());
+        return extractPaths(sourceTree.json(), "blob", sourcePrefix)
+            .stream()
+            .filter(path -> resource.recommended() || (!path.equals(sourcePrefix + "plugin.json") && !path.equals(sourcePrefix + "README.md")))
+            .sorted()
+            .toList();
+    }
+
     static List<String> wrapText(String text, int width) {
         List<String> lines = new ArrayList<>();
         String normalized = text == null ? "" : text.trim().replaceAll("\\s+", " ");
@@ -489,17 +648,28 @@ class AiToolkit implements Runnable {
     enum Decision { PROMPT, ALL_OVERWRITE, ALL_SKIP }
     record BranchTree(String branch, String json) {}
     record InstructionFragment(String relativePath, String content) {}
+    record ResourceSpec(
+        String id,
+        String displayName,
+        String description,
+        String owner,
+        String repo,
+        String branch,
+        String sourcePath,
+        String installPath,
+        boolean recommended,
+        String detailPath) {}
 
     // ─── install ──────────────────────────────────────────────────────────────
 
     @Command(
         name = "install",
         mixinStandardHelpOptions = true,
-        description = "Install an agent plugin from teggr/ai-toolkit into .github, .ai, or a custom target.")
+        description = "Install an agent plugin or recommended external skill into .github, .ai, or a custom target.")
     static class InstallCommand implements Callable<Integer> {
 
-        @Parameters(index = "0", paramLabel = "<plugin>",
-            description = "Agent plugin to install (e.g. discovery).")
+        @Parameters(index = "0", paramLabel = "<resource>",
+            description = "Agent plugin or recommended skill to install (e.g. discovery, grill-me).")
         String plugin;
 
         @Option(names = "--target", paramLabel = "<dir>",
@@ -523,40 +693,48 @@ class AiToolkit implements Runnable {
 
         @Override
         public Integer call() throws Exception {
-            String bundlePrefix = plugin + "/";
             Path installRoot = resolveInstallRoot();
             Files.createDirectories(installRoot);
 
-            BranchTree tree = fetchTree(client, true);
-            List<String> files = extractPaths(tree.json(), "blob", bundlePrefix)
-                .stream()
-                .filter(path -> !path.equals(bundlePrefix + "plugin.json"))
-                .filter(path -> !path.equals(bundlePrefix + "README.md"))
-                .sorted()
-                .toList();
-
-            if (files.isEmpty()) {
-                System.err.printf("No files found under %s in %s/%s.%n", bundlePrefix, OWNER, REPO);
+            BranchTree toolkitTree = fetchTree(client, true);
+            ResourceSpec resource = resolveResourceSpec(client, plugin, toolkitTree);
+            if (resource == null) {
+                System.err.printf("No installable resource found for '%s' in %s/%s.%n", plugin, OWNER, REPO);
                 return 1;
             }
 
-            System.out.printf("Installing agent plugin '%s' from %s/%s (%s) into %s%n",
-                plugin, OWNER, REPO, tree.branch(), installRoot.toAbsolutePath());
+            BranchTree sourceTree = isToolkitResource(resource, toolkitTree)
+                ? toolkitTree
+                : fetchTree(client, resource.owner(), resource.repo(), resource.branch(), true);
+            List<String> files = listResourceFiles(resource, sourceTree);
+
+            if (files.isEmpty()) {
+                System.err.printf("No files found under %s in %s/%s.%n", resource.sourcePath(), resource.owner(), resource.repo());
+                return 1;
+            }
+
+            String resourceLabel = resource.recommended() ? "recommended external skill" : "agent plugin";
+            System.out.printf("Installing %s '%s' from %s/%s (%s) into %s%n",
+                resourceLabel, resource.displayName(), resource.owner(), resource.repo(), sourceTree.branch(), installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
 
             int installed = 0, skipped = 0, failed = 0, merged = 0;
             List<InstructionFragment> instructionFragments = new ArrayList<>();
             List<String[]> mcpServerEntries = new ArrayList<>();
 
+            String sourcePrefix = ensureTrailingSlash(resource.sourcePath());
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
-                String relativePath = remotePath.substring(bundlePrefix.length());
+                String relativePathWithinSource = remotePath.substring(sourcePrefix.length());
+                String relativePath = resource.installPath().isBlank()
+                    ? relativePathWithinSource
+                    : resource.installPath() + "/" + relativePathWithinSource;
 
                 if (isMergeInstructionsFile(relativePath)) {
                     System.out.printf("[%d/%d] %s -> queue for merged root instructions%n", i + 1, files.size(), remotePath);
 
                     try {
-                        String instructionContent = fetchText(client, rawUrl(tree.branch(), remotePath));
+                        String instructionContent = fetchText(client, rawUrl(resource.owner(), resource.repo(), sourceTree.branch(), remotePath));
                         instructionFragments.add(new InstructionFragment(relativePath, instructionContent));
                         merged++;
                         System.out.println("  queued for merge");
@@ -570,7 +748,7 @@ class AiToolkit implements Runnable {
                 if (isMcpFile(relativePath)) {
                     System.out.printf("[%d/%d] %s -> queue for mcp.json merge%n", i + 1, files.size(), remotePath);
                     try {
-                        String mcpContent = fetchText(client, rawUrl(tree.branch(), remotePath));
+                        String mcpContent = fetchText(client, rawUrl(resource.owner(), resource.repo(), sourceTree.branch(), remotePath));
                         mcpServerEntries.addAll(extractMcpServerEntries(mcpContent));
                         merged++;
                         System.out.println("  queued for merge");
@@ -593,7 +771,7 @@ class AiToolkit implements Runnable {
                 }
 
                 try {
-                    downloadWithRetry(rawUrl(tree.branch(), remotePath), destination);
+                    downloadWithRetry(rawUrl(resource.owner(), resource.repo(), sourceTree.branch(), remotePath), destination);
                     installed++;
                     System.out.println("  installed");
                 } catch (Exception ex) {
@@ -607,7 +785,7 @@ class AiToolkit implements Runnable {
                 System.out.printf("[merge] %d file(s) -> %s%n", instructionFragments.size(), rootInstructions);
                 try {
                     String combinedInstructions = combineInstructionFragments(instructionFragments);
-                    upsertPluginInstructionSection(rootInstructions, plugin, combinedInstructions);
+                    upsertPluginInstructionSection(rootInstructions, resource.id(), combinedInstructions);
                     System.out.println("  merged");
                 } catch (Exception ex) {
                     failed++;
@@ -711,11 +889,11 @@ class AiToolkit implements Runnable {
     @Command(
         name = "uninstall",
         mixinStandardHelpOptions = true,
-        description = "Remove a previously installed agent plugin from .github (or a custom target).")
+        description = "Remove a previously installed agent plugin or recommended external skill from .github (or a custom target).")
     static class UninstallCommand implements Callable<Integer> {
 
-        @Parameters(index = "0", paramLabel = "<plugin>",
-            description = "Agent plugin to uninstall (e.g. discovery).")
+        @Parameters(index = "0", paramLabel = "<resource>",
+            description = "Agent plugin or recommended skill to uninstall (e.g. discovery, grill-me).")
         String plugin;
 
         @Option(names = "--target", paramLabel = "<dir>",
@@ -734,7 +912,6 @@ class AiToolkit implements Runnable {
 
         @Override
         public Integer call() throws Exception {
-            String bundlePrefix = plugin + "/";
             Path installRoot = resolveInstallRoot();
 
             if (!Files.isDirectory(installRoot)) {
@@ -742,25 +919,40 @@ class AiToolkit implements Runnable {
                 return 1;
             }
 
-            BranchTree tree = fetchTree(client, true);
-            List<String> files = extractPaths(tree.json(), "blob", bundlePrefix);
-
-            if (files.isEmpty()) {
-                System.err.printf("No files found under %s in %s/%s.%n", bundlePrefix, OWNER, REPO);
+            BranchTree toolkitTree = fetchTree(client, true);
+            ResourceSpec resource = resolveResourceSpec(client, plugin, toolkitTree);
+            if (resource == null) {
+                System.err.printf("No installable resource found for '%s' in %s/%s.%n", plugin, OWNER, REPO);
                 return 1;
             }
 
-            files.sort(Comparator.naturalOrder());
-            System.out.printf("Uninstalling agent plugin '%s' from %s%n", plugin, installRoot.toAbsolutePath());
+            BranchTree sourceTree = isToolkitResource(resource, toolkitTree)
+                ? toolkitTree
+                : fetchTree(client, resource.owner(), resource.repo(), resource.branch(), true);
+            List<String> files = listResourceFiles(resource, sourceTree);
+
+            if (files.isEmpty()) {
+                System.err.printf("No files found under %s in %s/%s.%n", resource.sourcePath(), resource.owner(), resource.repo());
+                return 1;
+            }
+
+            System.out.printf("Uninstalling %s '%s' from %s%n",
+                resource.recommended() ? "recommended external skill" : "agent plugin",
+                resource.displayName(),
+                installRoot.toAbsolutePath());
             System.out.printf("Found %d files.%n", files.size());
 
             int removed = 0, skipped = 0, missing = 0, directoriesRemoved = 0, sectionsRemoved = 0;
             boolean mergedSectionHandled = false;
             boolean mcpEntriesHandled = false;
+            String sourcePrefix = ensureTrailingSlash(resource.sourcePath());
 
             for (int i = 0; i < files.size(); i++) {
                 String remotePath = files.get(i);
-                String relativePath = remotePath.substring(bundlePrefix.length());
+                String relativePathWithinSource = remotePath.substring(sourcePrefix.length());
+                String relativePath = resource.installPath().isBlank()
+                    ? relativePathWithinSource
+                    : resource.installPath() + "/" + relativePathWithinSource;
 
                 if (isMergeInstructionsFile(relativePath)) {
                     if (mergedSectionHandled) {
@@ -773,7 +965,7 @@ class AiToolkit implements Runnable {
                     Path rootInstructions = rootInstructionsTarget(installRoot);
                     System.out.printf("[%d/%d] remove merged section from %s%n", i + 1, files.size(), rootInstructions);
                     try {
-                        if (removePluginInstructionSection(rootInstructions, plugin)) {
+                        if (removePluginInstructionSection(rootInstructions, resource.id())) {
                             sectionsRemoved++;
                             System.out.println("  section removed");
                         } else {
@@ -797,7 +989,7 @@ class AiToolkit implements Runnable {
                     Path targetMcp = resolveMcpTarget(installRoot);
                     System.out.printf("[%d/%d] remove mcp entries from %s%n", i + 1, files.size(), targetMcp);
                     try {
-                        String pluginMcpContent = fetchText(client, rawUrl(tree.branch(), remotePath));
+                        String pluginMcpContent = fetchText(client, rawUrl(resource.owner(), resource.repo(), sourceTree.branch(), remotePath));
                         List<String> serverNames = extractMcpServerNames(pluginMcpContent);
                         if (removeMcpServerEntries(targetMcp, serverNames)) {
                             sectionsRemoved++;
@@ -900,7 +1092,7 @@ class AiToolkit implements Runnable {
     @Command(
         name = "list",
         mixinStandardHelpOptions = true,
-        description = "List available agent plugins in the teggr/ai-toolkit repository.")
+        description = "List available agent plugins and recommended external skills in the teggr/ai-toolkit repository.")
     static class ListCommand implements Callable<Integer> {
 
         private final HttpClient client = newHttpClient();
@@ -910,44 +1102,56 @@ class AiToolkit implements Runnable {
             BranchTree tree = fetchTree(client, true);
             List<String> manifests = extractPaths(tree.json(), "blob", null)
                 .stream()
-                // A valid installable agent plugin must have a top-level plugin.json manifest.
                 .filter(p -> p.endsWith("/plugin.json") && p.indexOf('/') == p.lastIndexOf('/'))
                 .sorted()
                 .toList();
+            List<ResourceSpec> recommendedResources = loadRecommendedResourceSpecs(client, tree);
 
-            if (manifests.isEmpty()) {
-                System.out.println("No agent plugins found.");
+            if (manifests.isEmpty() && recommendedResources.isEmpty()) {
+                System.out.println("No installable resources found.");
                 return 1;
             }
 
-            List<String> bundleNames = manifests.stream()
-                .map(manifestPath -> manifestPath.substring(0, manifestPath.indexOf('/')))
-                .toList();
-            int longestName = bundleNames.stream().mapToInt(String::length).max().orElse(0);
+            List<String> names = new ArrayList<>();
+            names.addAll(manifests.stream().map(manifestPath -> manifestPath.substring(0, manifestPath.indexOf('/'))).toList());
+            names.addAll(recommendedResources.stream().map(ResourceSpec::displayName).toList());
+            int longestName = names.stream().mapToInt(String::length).max().orElse(0);
             int nameColumnWidth = Math.max(12, longestName);
             int descriptionWidth = 96 - (2 + nameColumnWidth + 2);
             if (descriptionWidth < 40) {
                 descriptionWidth = 40;
             }
 
-            System.out.printf("Available agent plugins in %s/%s (%s):%n", OWNER, REPO, tree.branch());
-            for (String manifestPath : manifests) {
-                String plugin = manifestPath.substring(0, manifestPath.indexOf('/'));
-                String description = "(no description)";
-                try {
-                    String manifestJson = fetchText(client, rawUrl(tree.branch(), manifestPath));
-                    String parsed = extractJsonStringField(manifestJson, "description");
-                    if (parsed != null && !parsed.isBlank()) {
-                        description = parsed.trim();
+            System.out.printf("Available installable resources in %s/%s (%s):%n", OWNER, REPO, tree.branch());
+            if (!manifests.isEmpty()) {
+                System.out.println();
+                System.out.println("Agent plugins:");
+                for (String manifestPath : manifests) {
+                    String plugin = manifestPath.substring(0, manifestPath.indexOf('/'));
+                    String description = "(no description)";
+                    try {
+                        String manifestJson = fetchText(client, rawUrl(tree.branch(), manifestPath));
+                        String parsed = extractJsonStringField(manifestJson, "description");
+                        if (parsed != null && !parsed.isBlank()) {
+                            description = parsed.trim();
+                        }
+                    } catch (Exception ignored) {
+                        // Keep listing agent plugins even if one manifest cannot be read.
                     }
-                } catch (Exception ignored) {
-                    // Keep listing agent plugins even if one manifest cannot be read.
+                    printListEntry(plugin, description, nameColumnWidth, descriptionWidth);
                 }
-                printListEntry(plugin, description, nameColumnWidth, descriptionWidth);
+            }
+
+            if (!recommendedResources.isEmpty()) {
+                System.out.println();
+                System.out.println("Recommended external skills:");
+                for (ResourceSpec resource : recommendedResources) {
+                    String description = resource.description() + " [source: " + resource.owner() + "/" + resource.repo() + "]";
+                    printListEntry(resource.displayName(), description, nameColumnWidth, descriptionWidth);
+                }
             }
             return 0;
         }
     }
 
 }
-

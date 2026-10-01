@@ -309,6 +309,7 @@
     .badge-instructions { background: rgba(210,153,34,0.2); color: #e3b341; }
     .badge-plugin     { background: rgba(163,113,247,0.2); color: #d2a8ff; }
     .badge-mcp        { background: rgba(20,184,166,0.2);  color: #5eead4; }
+    .badge-recommended { background: rgba(251,191,36,0.18); color: #facc15; }
 
     .card-description {
       color: var(--muted);
@@ -567,7 +568,7 @@
         <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
           <path d="M10.68 11.74a6 6 0 1 1 1.06-1.06l3.04 3.03a.75.75 0 1 1-1.06 1.06zM1.5 6.5a4.5 4.5 0 1 0 9 0 4.5 4.5 0 0 0-9 0z"/>
         </svg>
-        <input type="search" id="search" placeholder="Search agent plugins…" />
+        <input type="search" id="search" placeholder="Search resources…" />
       </div>
       <div id="type-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
@@ -626,6 +627,7 @@
 
   const TYPE_ICONS = {
     plugin: '🔌',
+    recommended: '⭐',
     agents: '🤖',
     skills: '⚡',
     prompts: '💬',
@@ -633,11 +635,12 @@
     mcp: '🛠️',
   };
 
-  const KNOWN_TYPES = ['agents', 'skills', 'prompts', 'instructions', 'mcp'];
+  const KNOWN_TYPES = ['agents', 'skills', 'prompts', 'instructions', 'mcp', 'recommended'];
 
   // ── State ────────────────────────────────────────────────
   let allItems = [];   // { name, path, purpose, type, sha }
   let allPlugins = []; // { name, description, purpose, path, type, types, keywords, resourceCount, markdown, frontMatter, manifest }
+  let recommendedCount = 0;
   let topKeywords = [];
   let activeFilter = null;
   let activeSidebarItem = null;
@@ -721,23 +724,62 @@
       };
     }));
 
-    const keywordCounts = new Map();
-    for (const plugin of plugins) {
-      for (const keyword of plugin.keywords) {
-        keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
-      }
-    }
-    topKeywords = [...keywordCounts.entries()]
-      .sort((a, b) => {
-        if (b[1] !== a[1]) return b[1] - a[1];
-        return a[0].localeCompare(b[0]);
-      })
-      .slice(0, 3)
-      .map(([keyword]) => keyword);
-
-    allItems = items;
-    allPlugins = plugins;
     return { items, plugins };
+  }
+
+  async function loadRecommendedResources() {
+    const res = await fetch('./recommended-resources.json');
+    if (!res.ok) throw new Error(`Recommended resources index error: ${res.status}`);
+    const data = await res.json();
+    const resources = Array.isArray(data.resources) ? data.resources : [];
+
+    const recommendedResources = await Promise.all(resources.map(async resource => {
+      const rawContent = await fetchRecommendedMarkdown(resource);
+      const frontMatter = parseFrontMatter(rawContent);
+      const metadata = frontMatter?.data || {};
+      const keywords = (metadata.keywords || '')
+        .split(',')
+        .map(keyword => keyword.trim().toLowerCase())
+        .filter(Boolean);
+      const name = metadata.name || resource.id;
+      const description = metadata.description || 'Recommended external resource';
+      const resourceItem = {
+        name,
+        path: resource.path,
+        purpose: resource.id,
+        type: 'skills',
+        sha: null,
+        displayName: name,
+        recommended: true,
+        canonicalUrl: metadata.canonical_url || metadata.repository_url || `https://github.com/${OWNER}/${REPO}/blob/${BRANCH}/${resource.path}`,
+        rawContent,
+        frontMatter,
+        markdownBody: frontMatter ? frontMatter.content : rawContent,
+      };
+
+      return {
+        name,
+        description,
+        purpose: resource.id,
+        path: resource.path,
+        type: 'recommended',
+        sha: null,
+        types: ['skills', 'recommended'],
+        keywords: [...new Set(['recommended', ...keywords])],
+        resourceCount: 1,
+        resources: [resourceItem],
+        recommended: true,
+        canonicalUrl: resourceItem.canonicalUrl,
+        rawContent,
+        frontMatter,
+        markdownBody: resourceItem.markdownBody,
+      };
+    }));
+
+    return {
+      items: recommendedResources.map(resource => resource.resources[0]),
+      plugins: recommendedResources,
+    };
   }
 
   // ── Render sidebar ───────────────────────────────────────
@@ -747,7 +789,7 @@
 
     const skillsMarkup = availableSkills.length
       ? availableSkills.map(skill => `
-        <button class="sidebar-nav-item sidebar-skill-item ${activeSidebarItem === skill.path ? 'active' : ''}" data-skill-path="${escapeHtml(skill.path)}" type="button" title="${escapeHtml(skill.path)}">${escapeHtml(skill.displayName)}</button>
+        <button class="sidebar-nav-item sidebar-skill-item ${activeSidebarItem === `${skill.purpose}:${skill.path}` ? 'active' : ''}" data-skill-path="${escapeHtml(skill.path)}" data-skill-purpose="${escapeHtml(skill.purpose)}" type="button" title="${escapeHtml(skill.path)}">${escapeHtml(skill.displayName)}${skill.recommended ? ' · recommended' : ''}</button>
       `).join('')
       : '<div class="sidebar-empty">No skills in current view</div>';
 
@@ -767,9 +809,9 @@
 
     sidebar.querySelectorAll('[data-skill-path]').forEach(button => {
       button.addEventListener('click', () => {
-        const skill = availableSkills.find(item => item.path === button.dataset.skillPath);
+        const skill = availableSkills.find(item => item.path === button.dataset.skillPath && item.purpose === button.dataset.skillPurpose);
         if (!skill) return;
-        activeSidebarItem = skill.path;
+        activeSidebarItem = `${skill.purpose}:${skill.path}`;
         openItem(skill);
         buildSidebar(filteredPlugins);
       });
@@ -793,7 +835,7 @@
   function getAvailableSkills(filteredPlugins) {
     const purposes = new Set(filteredPlugins.map(plugin => plugin.purpose));
     return allItems
-      .filter(item => item.type === 'skills' && purposes.has(item.purpose) && /\/SKILL\.md$/i.test(item.path))
+      .filter(item => item.type === 'skills' && purposes.has(item.purpose) && (!item.recommended ? /\/SKILL\.md$/i.test(item.path) : true))
       .map(item => {
         const parts = item.path.split('/');
         const folderName = parts.length >= 4 ? parts[2] : item.name;
@@ -811,7 +853,7 @@
     buildSidebar(plugins);
 
     if (plugins.length === 0) {
-      cards.innerHTML = `<div class="state-msg"><span class="emoji">🔍</span>No agent plugins match your search.</div>`;
+      cards.innerHTML = `<div class="state-msg"><span class="emoji">🔍</span>No resources match your search.</div>`;
       return;
     }
 
@@ -828,7 +870,7 @@
       card.className = 'card';
       card.innerHTML = `
         <div class="card-header">
-          <span class="card-icon">${TYPE_ICONS.plugin}</span>
+          <span class="card-icon">${TYPE_ICONS[plugin.type] || TYPE_ICONS.plugin}</span>
           <span class="card-name">${escapeHtml(plugin.name)}</span>
         </div>
         <div class="card-description">${escapeHtml(plugin.description)}</div>
@@ -904,10 +946,10 @@
     title.textContent = item.name;
     badge.textContent = item.type;
     badge.className   = `badge badge-${item.type}`;
-    typeBadges.innerHTML = item.type === 'plugin'
+    typeBadges.innerHTML = (item.type === 'plugin' || item.type === 'recommended')
       ? item.types.map(type => `<span class="badge badge-${type}">${escapeHtml(type)}</span>`).join('')
       : '';
-    link.href = `https://github.com/${OWNER}/${REPO}/blob/${BRANCH}/${item.path}`;
+    link.href = item.canonicalUrl || `https://github.com/${OWNER}/${REPO}/blob/${BRANCH}/${item.path}`;
     body.innerHTML = `<div class="state-msg"><div class="spinner"></div></div>`;
     copyBtn.disabled  = true;
     dlBtn.disabled    = true;
@@ -934,9 +976,9 @@
         rawContent = JSON.stringify(item.manifest || {}, null, 2);
         body.innerHTML = `${renderPluginManifest(item.manifest)}${renderPluginResources(item)}${renderPluginInstallSection(item)}`;
       } else {
-        rawContent = await fetchMarkdown(item.path);
-        const frontMatter = parseFrontMatter(rawContent);
-        const markdownBody = frontMatter ? frontMatter.content : rawContent;
+        rawContent = item.rawContent || await fetchMarkdown(item.path);
+        const frontMatter = item.frontMatter || parseFrontMatter(rawContent);
+        const markdownBody = item.markdownBody || (frontMatter ? frontMatter.content : rawContent);
         const metadataSection = renderFrontMatter(frontMatter);
         body.innerHTML = `${metadataSection}${marked.parse(markdownBody)}`;
       }
@@ -1015,10 +1057,30 @@
     return jbangCommandForPlugin(item.purpose);
   }
 
+  function repoContentUrl(path) {
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      return `../${path}`;
+    }
+    return `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}`;
+  }
+
   async function fetchMarkdown(path) {
-    const rawUrl = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${path}`;
-    const res = await fetch(rawUrl);
+    const res = await fetch(repoContentUrl(path));
     if (!res.ok) throw new Error(`Failed to fetch ${path}: ${res.status}`);
+    return res.text();
+  }
+
+  function docsRelativeUrl(path) {
+    const pathname = window.location.pathname;
+    const basePath = pathname.endsWith('/')
+      ? pathname
+      : pathname.replace(/[^/]*$/, '');
+    return new URL(path, `${window.location.origin}${basePath}`).toString();
+  }
+
+  async function fetchRecommendedMarkdown(resource) {
+    const res = await fetch(docsRelativeUrl(resource.sitePath || resource.path));
+    if (!res.ok) throw new Error(`Failed to fetch ${resource.path}: ${res.status}`);
     return res.text();
   }
 
@@ -1165,11 +1227,31 @@
   // ── Boot ─────────────────────────────────────────────────
   (async () => {
     try {
-      const { items, plugins } = await loadTree();
-      const count = items.length;
+      const bundled = await loadTree();
+      const recommended = await loadRecommendedResources();
+      const items = [...bundled.items, ...recommended.items];
+      const plugins = [...bundled.plugins, ...recommended.plugins];
+
+      allItems = items;
+      allPlugins = plugins;
+      recommendedCount = recommended.plugins.length;
 
       document.getElementById('subtitle').innerHTML =
-        `${plugins.length} agent plugin${plugins.length !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
+        `${bundled.plugins.length} bundled plugin${bundled.plugins.length !== 1 ? 's' : ''} · ${recommendedCount} recommended resource${recommendedCount !== 1 ? 's' : ''} · <a href="https://github.com/${OWNER}/${REPO}" target="_blank" rel="noopener">${OWNER}/${REPO}</a> · <a href="./install.html">How to install</a>`;
+
+      const keywordCounts = new Map();
+      for (const plugin of plugins) {
+        for (const keyword of plugin.keywords) {
+          keywordCounts.set(keyword, (keywordCounts.get(keyword) || 0) + 1);
+        }
+      }
+      topKeywords = [...keywordCounts.entries()]
+        .sort((a, b) => {
+          if (b[1] !== a[1]) return b[1] - a[1];
+          return a[0].localeCompare(b[0]);
+        })
+        .slice(0, 4)
+        .map(([keyword]) => keyword);
 
       buildFilters();
       renderCards();

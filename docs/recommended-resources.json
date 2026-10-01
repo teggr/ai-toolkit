@@ -1,0 +1,14 @@
+{
+  "resources": [
+    {
+      "id": "grill-me",
+      "path": "recommended/skills/grill-me.md",
+      "sitePath": "recommended/skills/grill-me.md"
+    },
+    {
+      "id": "show-me",
+      "path": "recommended/skills/show-me.md",
+      "sitePath": "recommended/skills/show-me.md"
+    }
+  ]
+}
