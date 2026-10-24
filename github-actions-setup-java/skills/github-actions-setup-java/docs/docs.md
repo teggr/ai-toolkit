@@ -6,14 +6,14 @@ Use this reference when adding or updating `actions/setup-java` in a GitHub Acti
 
 ## Latest stable version
 
-Use `actions/setup-java@v5` for all production workflows. V6 is in active development on `main` and is not yet recommended for production.
+Use `actions/setup-java@v6.1.0` for production workflows.
 
 ## Minimal workflow example
 
 ```yaml
 steps:
   - uses: actions/checkout@v7
-  - uses: actions/setup-java@v5
+  - uses: actions/setup-java@v6.1.0
     with:
       distribution: temurin
       java-version: '21'
@@ -43,6 +43,14 @@ steps:
 | `mvn-toolchain-id` | Maven Toolchain ID (one per installed JDK when using multiple). | `${distribution}_${java-version}` |
 | `mvn-toolchain-vendor` | Maven Toolchain vendor. | `${distribution}` |
 | `show-download-progress` | Show Maven artifact download progress (adds `-ntp` when `false`). | `false` |
+| `architecture` | Package architecture; supported values vary by distribution and operating system. | Runner architecture |
+| `cache-jdk` | Cache downloaded JDK installations between jobs. | Enabled when `cache` is set |
+| `cache-path` | Override paths used by dependency caching. | Package-manager defaults |
+| `problem-matcher` | Register Java compiler and uncaught-exception problem matchers. | `true` |
+| `token` | Token for fetching GitHub-hosted version manifests, useful on GHES when rate-limited. | `${{ github.token }}` on GitHub.com |
+| `verify-signature-public-key` | Custom GPG public key(s) used for package signature verification. | Bundled keys |
+
+V6 also supports multiple Maven credentials and custom dependency/plugin repositories; see the [official inputs reference](https://github.com/actions/setup-java/blob/v6.1.0/README.md#inputs) for `mvn-server-credentials`, `mvn-server-repository-origins`, `mvn-repositories`, and related options.
 
 ### Deprecated inputs (still accepted, should be replaced)
 
@@ -82,6 +90,7 @@ steps:
 | `dragonwell` | Alibaba Dragonwell |
 | `kona` | Tencent Kona |
 | `jetbrains` | JetBrains Runtime |
+| `redhat` | Red Hat Build of OpenJDK |
 | `jdkfile` | Custom local JDK archive |
 
 > `adopt` and `adopt-hotspot` are removed. Use `temurin` instead.
@@ -99,7 +108,7 @@ steps:
 Reading from a version file (`.java-version`, `.tool-versions`, `.sdkmanrc`):
 
 ```yaml
-- uses: actions/setup-java@v5
+- uses: actions/setup-java@v6.1.0
   with:
     distribution: temurin
     java-version-file: .java-version
@@ -112,7 +121,7 @@ A `.sdkmanrc` file containing `java=21.0.5-tem` will auto-detect the `temurin` d
 Enable dependency and wrapper caching by setting `cache`:
 
 ```yaml
-- uses: actions/setup-java@v5
+- uses: actions/setup-java@v6.1.0
   with:
     distribution: temurin
     java-version: '21'
@@ -130,7 +139,7 @@ The action manages three cache types:
 Override the dependency files used for key hashing in monorepos:
 
 ```yaml
-- uses: actions/setup-java@v5
+- uses: actions/setup-java@v6.1.0
   with:
     distribution: temurin
     java-version: '21'
@@ -154,7 +163,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
           java-version: '21'
@@ -174,7 +183,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
           java-version: '21'
@@ -185,7 +194,7 @@ jobs:
 ### Publishing to GitHub Packages (Maven)
 
 ```yaml
-- uses: actions/setup-java@v5
+- uses: actions/setup-java@v6.1.0
   with:
     distribution: temurin
     java-version: '21'
@@ -200,7 +209,7 @@ jobs:
 ### Publishing to Maven Central with GPG signing
 
 ```yaml
-- uses: actions/setup-java@v5
+- uses: actions/setup-java@v6.1.0
   with:
     distribution: temurin
     java-version: '21'
@@ -227,7 +236,7 @@ jobs:
         java-version: ['17', '21', '25']
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6.1.0
         with:
           distribution: temurin
           java-version: ${{ matrix.java-version }}
@@ -240,7 +249,7 @@ jobs:
 ```yaml
 steps:
   - uses: actions/checkout@v7
-  - uses: actions/setup-java@v5
+  - uses: actions/setup-java@v6.1.0
     with:
       distribution: temurin
       java-version: |
@@ -255,7 +264,7 @@ When multiple versions are listed, `JAVA_HOME` and `PATH` are set to the first l
 ### Install JDK without changing PATH (side JDK)
 
 ```yaml
-- uses: actions/setup-java@v5
+- uses: actions/setup-java@v6.1.0
   with:
     distribution: temurin
     java-version: '17'
@@ -276,14 +285,16 @@ When a project does not yet have a CI workflow, create `.github/workflows/build.
 
 Check for these common issues in existing workflows:
 
-1. **Outdated action version** — upgrade any `actions/setup-java@v1` through `v4` to `@v5`.
+1. **Outdated action version** — upgrade any `actions/setup-java@v1` through `v5` to `@v6.1.0`.
 2. **Deprecated distribution keywords** — replace `adopt`/`adopt-hotspot` with `temurin`; replace `adopt-openj9` with `semeru`.
 3. **Missing cache** — add `cache: maven` or `cache: gradle` to reduce build time.
 4. **Deprecated input names** — replace `server-username`, `server-password`, `gpg-passphrase`, `jdkFile` with their current equivalents.
 5. **Hard-coded patch version** — consider pinning only the major version (e.g., `'21'`) so security patches are picked up automatically, or use `check-latest: true` for floating updates.
 
+When using self-hosted runners, use runner version `v2.327.1` or later to support the action's Node 24 runtime. This requirement was introduced in setup-java v5 and also applies to v6.1.0.
+
 ## Fallback reference
 
 For inputs not covered here, consult:
-- https://github.com/actions/setup-java — official repository and full README
-- https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md — advanced usage including GPG, toolchains, and custom distributions
+- https://github.com/actions/setup-java/blob/v6.1.0/README.md — official repository and full README
+- https://github.com/actions/setup-java/blob/v6.1.0/docs/advanced-usage.md — advanced usage including GPG, toolchains, and custom distributions

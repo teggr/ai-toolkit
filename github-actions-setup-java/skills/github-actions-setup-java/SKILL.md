@@ -15,7 +15,7 @@ Use this skill to:
 
 Primary usage pattern:
 1. Use [docs/docs.md](docs/docs.md) in this skill for inputs, supported distributions, caching rules, version syntax, and example workflows.
-2. Always use the latest stable release (`v5`) unless the user explicitly targets a newer major version.
+2. Use the latest stable release (`v6.1.0`) unless the user explicitly targets a different version.
 3. Prefer `distribution: temurin` and a pinned LTS version (`21` or `25`) unless the project already specifies a version file or a different distribution.
 4. Use `cache: maven` or `cache: gradle` whenever the project uses those build tools to avoid redundant dependency downloads.
 5. Use the official repository as a live fallback for edge cases: https://github.com/actions/setup-java
